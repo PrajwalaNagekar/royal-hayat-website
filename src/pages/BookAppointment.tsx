@@ -560,6 +560,10 @@ const BookAppointment = () => {
                             navigate("/al-safwa", { state: { fromBookAppointment: true } });
                             return;
                           }
+                          if (dept.slug === "home-health") {
+                            navigate("/medical-services/home-health", { state: { fromBookAppointment: true } });
+                            return;
+                          }
                           setSelectedDept(dept.id);
                           setStep(1);
                         }}

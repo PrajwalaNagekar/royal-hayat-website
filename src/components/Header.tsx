@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Menu, X, Search, ChevronDown, Building2, Stethoscope, Users, Home, Heart, Star, ShieldCheck, Phone, MapPin, Bed, Sparkles, BookOpen, Coffee, Droplets, ClipboardList, UserCheck, ScrollText, Baby, Mail } from "lucide-react";
+import { Menu, X, Search, ChevronDown, Building2, Stethoscope, Users, Home, Heart, Star, ShieldCheck, Phone, MapPin, Bed, Sparkles, BookOpen, Coffee, Droplets, ClipboardList, UserCheck, ScrollText, Baby, Mail, Briefcase, Info, ConciergeBell } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -95,13 +96,18 @@ const Header = () => {
     { label: lang === "ar" ? "ثقافة العمل" : "Work Culture", href: "/work-with-us?section=culture", icon: Heart, desc: lang === "ar" ? "لماذا تعمل في رويال حياة" : "Why work at Royale Hayat" },
   ];
 
-  const navItems = [
-    { label: t("aboutUsNav"), href: "/about-us", hasDropdown: "about" },
-    { label: t("medicalServices"), href: "/medical-services", hasDropdown: "medical" },
-    { label: t("hospitalityServices"), href: "/hospitality", hasDropdown: "hospitality" },
-    { label: t("patientsVisitors"), href: "/patients-visitors", hasDropdown: "patients" },
-    { label: lang === "ar" ? "اعمل معنا" : "Work With Us", href: "/work-with-us", hasDropdown: "workwithus" },
-    { label: lang === "ar" ? "اتصل بنا" : "Contact Us", href: "/contact-us" },
+  const navItems: {
+    label: string;
+    href: string;
+    hasDropdown?: string;
+    icon: LucideIcon;
+  }[] = [
+    { label: t("aboutUsNav"), href: "/about-us", hasDropdown: "about", icon: Info },
+    { label: t("medicalServices"), href: "/medical-services", hasDropdown: "medical", icon: Stethoscope },
+    { label: t("hospitalityServices"), href: "/hospitality", hasDropdown: "hospitality", icon: ConciergeBell },
+    { label: t("patientsVisitors"), href: "/patients-visitors", hasDropdown: "patients", icon: Users },
+    { label: lang === "ar" ? "اعمل معنا" : "Work With Us", href: "/work-with-us", hasDropdown: "workwithus", icon: Briefcase },
+    // { label: lang === "ar" ? "اتصل بنا" : "Contact Us", href: "/contact-us", icon: Mail },
   ];
 
   const contactSubLinks = [
@@ -130,7 +136,7 @@ const Header = () => {
       { label: "Medical Services", labelAr: "الخدمات الطبية", type: "Page", typeAr: "صفحة", href: "/medical-services" },
       { label: "Book Appointment", labelAr: "حجز موعد", type: "Page", typeAr: "صفحة", href: "/book-appointment" },
       { label: "Hospitality Services", labelAr: "خدمات الضيافة", type: "Page", typeAr: "صفحة", href: "/hospitality" },
-      { label: "Patients & Visitors", labelAr: "المرضى والزوار", type: "Page", typeAr: "صفحة", href: "/patients-visitors" },
+      { label: "Patients Info", labelAr: "معلومات للمرضى والزوار", type: "Page", typeAr: "صفحة", href: "/patients-visitors" },
       { label: "Work With Us", labelAr: "اعمل معنا", type: "Page", typeAr: "صفحة", href: "/work-with-us" },
       { label: "Al Safwa Program", labelAr: "برنامج الصفوة", type: "Page", typeAr: "صفحة", href: "/al-safwa" },
       { label: "Home Health", labelAr: "الرعاية المنزلية", type: "Page", typeAr: "صفحة", href: "/home-health" },
@@ -338,19 +344,46 @@ const Header = () => {
         </AnimatePresence>
 
         {/* Row 1: Logo */}
-        <div ref={logoRowRef} className="hidden md:block border-b border-border/50 bg-red">
+        <div ref={logoRowRef} className="hidden md:block border-b border-border/50">
           <div className="container mx-auto flex items-center justify-between py-3 px-4 md:px-6">
             <div className="flex-1" />
             <Link to="/">
               <img src={logoFull} alt="Royale Hayat Hospital" className="h-16 md:h-[72px] w-auto" />
             </Link>
-            <div className="flex-1 flex items-center justify-end gap-4 font-body text-xs text-muted-foreground">
-              <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
-                <Phone className="w-3.5 h-3.5" /> +965 2536 0000
-              </a>
-              <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
-                <MapPin className="w-3.5 h-3.5" /> info@royalehayat.com
-              </a>
+            <div className="flex-1 flex items-center justify-end">
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
+                  <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
+                    <Phone className="w-3.5 h-3.5" /> +965 2536 0000
+                  </a>
+                  <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
+                    <MapPin className="w-3.5 h-3.5" /> info@royalehayat.com
+                  </a>
+                </div>
+                {/* Language capsule toggle EN | العربية — below phone / contact line */}
+                <div className="flex items-center bg-muted/40 rounded-full border border-border p-0.5">
+                  <button
+                    onClick={() => setLang("en")}
+                    className={`rounded-full font-semibold tracking-wide transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "en"
+                      ? "bg-accent text-accent-foreground shadow-sm"
+                      : "bg-transparent text-muted-foreground hover:bg-background/60"
+                      }`}
+                    aria-label="English"
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => setLang("ar")}
+                    className={`rounded-full font-semibold transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "ar"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-transparent text-muted-foreground hover:bg-background/60"
+                      }`}
+                    aria-label="العربية"
+                  >
+                    العربية
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -364,7 +397,9 @@ const Header = () => {
 
           {/* Desktop nav - evenly spaced */}
           <nav className="hidden xl:flex items-center flex-1 justify-between">
-            {navItems.map((item) => (
+            {navItems.map((item) => {
+              const NavIcon = item.icon;
+              return (
               <div
                 key={item.label}
                 className="relative"
@@ -373,14 +408,16 @@ const Header = () => {
               >
                 {item.href.startsWith("/") ? (
                   <Link to={item.href} className={linkClass}>
-                    <span className="inline-flex items-center gap-0.5 w-fit">
+                    <span className="inline-flex items-center gap-1.5 w-fit">
+                      <NavIcon className="w-3.5 h-3.5 shrink-0 text-primary" aria-hidden />
                       <span>{item.label}</span>
                       {item.hasDropdown && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
                     </span>
                   </Link>
                 ) : (
                   <a href={item.href} className={linkClass}>
-                    <span className="inline-flex items-center gap-0.5 w-fit">
+                    <span className="inline-flex items-center gap-1.5 w-fit">
+                      <NavIcon className="w-3.5 h-3.5 shrink-0 text-primary" aria-hidden />
                       <span>{item.label}</span>
                       {item.hasDropdown && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
                     </span>
@@ -398,7 +435,9 @@ const Header = () => {
                       className={`absolute top-full mt-2 ${item.hasDropdown === "patients" ? "w-[680px]" : "w-[480px]"} bg-popover border border-border rounded-2xl shadow-2xl z-50 p-6 ${lang === "ar" ? "right-0" : "left-1/2 -translate-x-1/2"}`}
                       style={{ maxWidth: 'calc(100vw - 2rem)' }}
                     >
-                      <p className="text-xs tracking-[0.2em] uppercase font-body text-accent mb-4">{item.label}</p>
+                      <p className="text-xs tracking-[0.2em] uppercase font-body text-accent mb-4">
+                        {item.hasDropdown === "patients" ? t("patientsVisitorsDropdownTitle") : item.label}
+                      </p>
                       <div className={`grid ${item.hasDropdown === "patients" ? "grid-cols-2" : "grid-cols-1"} gap-2`}>
                         {getSubLinks(item.hasDropdown).map((sub) => (
                           sub.href.startsWith("/") ? (
@@ -444,7 +483,8 @@ const Header = () => {
                   )}
                 </AnimatePresence>
               </div>
-            ))}
+            );
+            })}
           </nav>
 
           {/* Right side buttons */}
@@ -472,29 +512,7 @@ const Header = () => {
               {t("login")}
             </button>
 
-            {/* Language capsule toggle EN | العربية */}
-            <div className="flex items-center bg-muted/40 rounded-full border border-border p-0.5">
-              <button
-                onClick={() => setLang("en")}
-                className={`rounded-full font-semibold tracking-wide transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "en"
-                  ? "bg-accent text-accent-foreground shadow-sm"
-                  : "bg-transparent text-muted-foreground hover:bg-background/60"
-                  }`}
-                aria-label="English"
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setLang("ar")}
-                className={`rounded-full font-semibold transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "ar"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-transparent text-muted-foreground hover:bg-background/60"
-                  }`}
-                aria-label="العربية"
-              >
-                العربية
-              </button>
-            </div>
+
 
             <button
               className="xl:hidden w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-foreground flex-shrink-0"
@@ -516,23 +534,27 @@ const Header = () => {
               className="xl:hidden bg-popover border-t border-border overflow-hidden"
             >
               <nav className="flex flex-col py-4 px-6">
-                {navItems.map((item) => (
+                {navItems.map((item) => {
+                  const NavIcon = item.icon;
+                  return (
                   <div key={item.label} className="border-b border-border/50 last:border-0">
                     <div className="flex items-center justify-between">
                       {item.href.startsWith("/") ? (
                         <Link
                           to={item.href}
-                          className="flex-1 text-foreground font-body text-sm tracking-wide py-3 hover:text-accent transition-colors block"
+                          className="flex-1 flex items-center gap-2.5 text-foreground font-body text-sm tracking-wide py-3 hover:text-accent transition-colors"
                           onClick={() => setMenuOpen(false)}
                         >
+                          <NavIcon className="w-4 h-4 text-primary shrink-0" aria-hidden />
                           {item.label}
                         </Link>
                       ) : (
                         <a
                           href={item.href}
-                          className="flex-1 text-foreground font-body text-sm tracking-wide py-3 hover:text-accent transition-colors block"
+                          className="flex-1 flex items-center gap-2.5 text-foreground font-body text-sm tracking-wide py-3 hover:text-accent transition-colors"
                           onClick={() => setMenuOpen(false)}
                         >
+                          <NavIcon className="w-4 h-4 text-primary shrink-0" aria-hidden />
                           {item.label}
                         </a>
                       )}
@@ -597,7 +619,8 @@ const Header = () => {
                       )}
                     </AnimatePresence>
                   </div>
-                ))}
+                  );
+                })}
                 <Link
                   to="/book-appointment"
                   className="text-primary font-body text-sm tracking-wide py-3 border-b border-border/50 hover:text-accent transition-colors"

@@ -51,31 +51,12 @@ const FeaturedDoctors = () => {
             <ChevronRight className="w-5 h-5" />
           </button>
           <div className="max-w-[280px] md:max-w-full lg:max-w-[1032px] mx-auto overflow-hidden">
-            <div ref={scrollRef} className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory medical-doctors-carousel" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              <style dangerouslySetInnerHTML={{
-                __html: `
-                .medical-doctors-carousel {
-                  padding-left: 0;
-                  padding-right: 0;
-                }
-                @media (min-width: 768px) {
-                  .medical-doctors-carousel {
-                    padding-left: calc((100vw - 240px) / 2);
-                    padding-right: calc((100vw - 240px) / 2);
-                  }
-                }
-                @media (min-width: 1024px) {
-                  .medical-doctors-carousel { 
-                    padding-left: 0 !important; 
-                    padding-right: 0 !important; 
-                  }
-                }
-              `}} />
+            <div ref={scrollRef} className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {featured.map((doc) => (
                 <Link
                   key={doc.id}
                   to={`/doctors/${doc.id}`}
-                  className="w-[280px] md:w-[240px] min-h-[420px] flex flex-col bg-popover border border-border/50 rounded-2xl hover:border-primary/30 hover:shadow-lg transition-all duration-300 group flex-shrink-0 relative z-0 hover:z-10 snap-center"
+                  className="w-[280px] md:w-[240px] min-h-[420px] flex flex-col bg-popover border border-border/50 rounded-2xl hover:border-primary/30 hover:shadow-lg transition-all duration-300 group flex-shrink-0 relative z-0 hover:z-10 snap-start"
                 >
                   <div className="bg-white h-64 flex items-center justify-center relative overflow-hidden shrink-0 rounded-t-2xl">
                     {doc.image ? (

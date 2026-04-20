@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
@@ -127,6 +127,10 @@ const DepartmentDoctors = ({ doctors, lang }: { doctors: typeof allDoctors; lang
 const DepartmentDetail = () => {
   const { slug, subSlug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromBookAppointment = Boolean(
+    (location.state as { fromBookAppointment?: boolean } | null)?.fromBookAppointment
+  );
   const { lang } = useLanguage();
   const [expandedSub, setExpandedSub] = useState<string | null>(subSlug || null);
 
@@ -213,6 +217,15 @@ const DepartmentDetail = () => {
         <div className="container mx-auto px-6">
           <ScrollAnimationWrapper>
             <div className="max-w-4xl">
+              {fromBookAppointment && (
+                <button
+                  onClick={() => navigate("/book-appointment")}
+                  className="inline-flex items-center gap-2 text-accent font-body text-xs tracking-wide mb-4 hover:underline"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  {lang === "ar" ? "العودة إلى حجز الموعد" : "Back to Book Appointment"}
+                </button>
+              )}
               {activeSub && (
                 <button
                   onClick={() => navigate(`/medical-services/${dept.slug}`)}
@@ -383,6 +396,31 @@ const DepartmentDetail = () => {
       {/* Doctors */}
       {deptDoctors.length > 0 && (
         <DepartmentDoctors doctors={deptDoctors} lang={lang} />
+      )}
+
+      {/* Home Health contact card */}
+      {dept.slug === "home-health" && !activeSub && (
+        <section className="pb-12">
+          <div className="container mx-auto px-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8">
+                <h3 className="font-serif text-xl text-foreground mb-4">
+                  {/* {lang === "ar" ? "تواصل معنا" : "Contact Details"} */}
+                </h3>
+                <div className="space-y-2 font-body text-sm text-foreground">
+                  <p>
+                    <span className="text-muted-foreground">{lang === "ar" ? "واتساب:" : "WhatsApp:"}</span>{" "}
+                    <a href="https://wa.me/96566320717" className="hover:text-accent transition-colors">+965 66320717</a>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">{lang === "ar" ? "للاستفسار اتصل:" : "For inquiry call:"}</span>{" "}
+                    <a href="tel:+96525360500" className="hover:text-accent transition-colors">+965 25360500</a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       )}
 
       <Footer />

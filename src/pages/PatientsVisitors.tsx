@@ -41,7 +41,7 @@ const PatientsVisitors = () => {
                     : tab === "during-stay" ? (lang === "ar" ? "أثناء إقامتك" : "During Your Stay")
                       : tab === "rooms-package" ? (lang === "ar" ? "باقات الغرف" : "Birthing Rooms Package")
                         : tab === "bill-of-rights" ? (lang === "ar" ? "وثيقة حقوق المريض" : "Patient Bill of Rights")
-                          : (lang === "ar" ? "المرضى والزوار" : "Patients & Visitors")}
+                          : (lang === "ar" ? "معلومات للمرضى والزوار" : "Information for Patients & Visitors")}
             </h1>
             {tab !== "rooms-package" && (
               <p className="text-muted-foreground font-body text-sm max-w-xl mx-auto">
@@ -59,7 +59,7 @@ const PatientsVisitors = () => {
             {showAll && (
               <ScrollAnimationWrapper>
                 <div className="bg-accent/5 border border-accent/10 rounded-2xl p-8 text-center">
-                  <h2 className="text-2xl font-serif text-foreground mb-3">{lang === "ar" ? "مرحباً بكم في قسم المرضى والزوار" : "Welcome to Patients & Visitors"}</h2>
+                  <h2 className="text-2xl font-serif text-foreground mb-3">{lang === "ar" ? "مرحباً بكم في صفحة معلومات للمرضى والزوار" : "Welcome to Information for Patients & Visitors"}</h2>
                   <p className="text-muted-foreground font-body text-sm leading-relaxed">
                     {lang === "ar" ? "هذا نص تجريبي سيتم استبداله لاحقاً. نحن ملتزمون بتوفير تجربة استثنائية لكل مريض وزائر في مستشفى رويال حياة. ستجد هنا كافة المعلومات المتعلقة بإقامتك وخدماتنا." : "This is a test text that will be replaced later. We are committed to providing an exceptional experience for every patient and visitor at Royale Hayat Hospital. Here you will find all the information related to your stay and our services."}
                   </p>

@@ -70,6 +70,14 @@ const Footer = () => {
             <h4 className="text-primary-foreground font-body text-xs tracking-[0.3em] uppercase mb-6">{t("contact")}</h4>
             <div className="space-y-4 font-body text-sm">
               <div className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                <div>
+                  <Link to="/contact-us" className="text-primary-foreground font-medium hover:text-accent transition-colors">
+                    {t("contactUsFooter")}
+                  </Link>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-primary-foreground font-medium">{t("hotline247")}</p>
