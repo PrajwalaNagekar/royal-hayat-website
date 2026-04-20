@@ -7,7 +7,7 @@ import ScrollAnimationWrapper from "@/components/ScrollAnimationWrapper";
 import { departmentDetails } from "@/data/departmentDetails";
 import { doctors as allDoctors } from "@/data/doctors";
 import { motion } from "framer-motion";
-import { ChevronRight, ChevronLeft, ArrowLeft, CheckCircle2, ChevronDown, Stethoscope } from "lucide-react";
+import { ChevronRight, ChevronLeft, ArrowLeft, CheckCircle2, ChevronDown, Stethoscope, MessageCircle, Phone } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -407,15 +407,21 @@ const DepartmentDetail = () => {
                 <h3 className="font-serif text-xl text-foreground mb-4">
                   {/* {lang === "ar" ? "تواصل معنا" : "Contact Details"} */}
                 </h3>
-                <div className="space-y-2 font-body text-sm text-foreground">
-                  <p>
-                    <span className="text-muted-foreground">{lang === "ar" ? "واتساب:" : "WhatsApp:"}</span>{" "}
-                    <a href="https://wa.me/96566320717" className="hover:text-accent transition-colors">+965 66320717</a>
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">{lang === "ar" ? "للاستفسار اتصل:" : "For inquiry call:"}</span>{" "}
-                    <a href="tel:+96525360500" className="hover:text-accent transition-colors">+965 25360500</a>
-                  </p>
+                <div className="space-y-3 font-body text-sm text-foreground">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-muted-foreground" />
+                    <p>
+                      <span className="text-muted-foreground">{lang === "ar" ? "واتساب:" : "WhatsApp:"}</span>{" "}
+                      <a href="https://wa.me/96566320717" className="hover:text-accent transition-colors">+965 66320717</a>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <p>
+                      <span className="text-muted-foreground">{lang === "ar" ? "للاستفسار اتصل:" : "For inquiry call:"}</span>{" "}
+                      <a href="tel:+96525360500" className="hover:text-accent transition-colors">+965 25360500</a>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

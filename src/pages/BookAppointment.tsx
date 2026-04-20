@@ -561,7 +561,7 @@ const BookAppointment = () => {
                             return;
                           }
                           if (dept.slug === "home-health") {
-                            navigate("/medical-services/home-health", { state: { fromBookAppointment: true } });
+                            navigate("/home-health", { state: { fromBookAppointment: true } });
                             return;
                           }
                           setSelectedDept(dept.id);
@@ -613,20 +613,22 @@ const BookAppointment = () => {
                             whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(74,20,35,0.12)" }}
                             className={`relative rounded-2xl border flex flex-col cursor-pointer transition-all duration-300 overflow-hidden ${selectedDoctor === doc.id ? "border-primary shadow-md" : "border-border/50 hover:border-accent/40"}`}
                             onClick={() => {
-                              if (doc.availableOnline === false) {
-                                navigate(`/appointment-request?doctor=${doc.id}&specialty=${doc.specialty}`, { state: { step, bookingPath, selectedDept, selectedDoctor: doc.id, isRequestMode: true } });
-                                return;
-                              }
-                              setSelectedDoctor(doc.id);
-                              setIsRequestMode(false);
-                              if (bookingPath === "doctor") {
-                                const dept = departments.find(d => {
-                                  const aliases = deptDoctorAliases[d.name] || [d.name];
-                                  return aliases.some(a => doc.department.includes(a) || doc.specialty.includes(a));
-                                });
-                                if (dept) setSelectedDept(dept.id);
-                              }
-                              setStep(2);
+                              const matchedDept = departments.find((d) => {
+                                const aliases = deptDoctorAliases[d.name] || [d.name];
+                                return aliases.some((a) => doc.department.includes(a) || doc.specialty.includes(a));
+                              });
+                              const resolvedDeptId = selectedDept ?? matchedDept?.id ?? null;
+                              navigate(`/doctors/${doc.id}`, {
+                                state: {
+                                  fromBookAppointment: true,
+                                  step,
+                                  bookingPath: bookingPath ?? "primary",
+                                  selectedDept: resolvedDeptId,
+                                  selectedDoctor: doc.id,
+                                  isRequestMode: doc.availableOnline === false,
+                                  canBookSlot: doc.availableOnline !== false,
+                                }
+                              });
                             }}>
                             {/* Photo area */}
                             <div className="bg-white h-64 flex items-center justify-center relative overflow-hidden shrink-0 rounded-t-2xl">
@@ -669,7 +671,22 @@ const BookAppointment = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/doctors/${doc.id}`, { state: { step, bookingPath, selectedDept, selectedDoctor, isRequestMode } });
+                                  const matchedDept = departments.find((d) => {
+                                    const aliases = deptDoctorAliases[d.name] || [d.name];
+                                    return aliases.some((a) => doc.department.includes(a) || doc.specialty.includes(a));
+                                  });
+                                  const resolvedDeptId = selectedDept ?? matchedDept?.id ?? null;
+                                  navigate(`/doctors/${doc.id}`, {
+                                    state: {
+                                      fromBookAppointment: true,
+                                      step,
+                                      bookingPath: bookingPath ?? "primary",
+                                      selectedDept: resolvedDeptId,
+                                      selectedDoctor: doc.id,
+                                      isRequestMode: doc.availableOnline === false,
+                                      canBookSlot: doc.availableOnline !== false,
+                                    }
+                                  });
                                 }}
                                 className="mt-auto inline-flex items-center gap-1 text-primary font-body text-xs hover:text-accent transition-colors"
                               >

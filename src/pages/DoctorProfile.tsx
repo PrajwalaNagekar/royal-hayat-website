@@ -7,8 +7,10 @@ import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { doctors } from "@/data/doctors";
+import { departments, deptDoctorAliases } from "@/data/departments";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+
 
 const patientFeedback = [
   {
@@ -62,8 +64,8 @@ const DoctorProfile = () => {
   const location = useLocation();
   const [showModal, setShowModal] = useState(false);
 
-  const bookingReturnState = (location.state as any);
-  const fromBooking = bookingReturnState?.step != null;
+  const bookingReturnState = (location.state as any) ?? {};
+  const fromBooking = Boolean(bookingReturnState?.fromBookAppointment || bookingReturnState?.step != null);
 
   const handleGoBack = () => {
     if (fromBooking) {
@@ -93,6 +95,26 @@ const DoctorProfile = () => {
   }
 
   const isOnlineAvailable = doctor.availableOnline !== false;
+  const canBookSlot = bookingReturnState?.canBookSlot ?? isOnlineAvailable;
+
+  const inferredDept = departments.find((d) => {
+    const aliases = deptDoctorAliases[d.name] || [d.name];
+    return aliases.some((a) => doctor.department.includes(a) || doctor.specialty.includes(a));
+  });
+
+  const handleBookSlot = () => {
+    navigate("/book-appointment", {
+      state: {
+        ...bookingReturnState,
+        fromBookAppointment: true,
+        bookingPath: bookingReturnState?.bookingPath ?? "primary",
+        selectedDept: bookingReturnState?.selectedDept ?? inferredDept?.id ?? null,
+        selectedDoctor: doctor.id,
+        isRequestMode: false,
+        step: 2,
+      },
+    });
+  };
 
   const handleBookAppointment = () => {
     if (isOnlineAvailable) {
@@ -152,14 +174,34 @@ const DoctorProfile = () => {
                       <div className={`w-2 h-2 rounded-full ${isOnlineAvailable ? "bg-green-500" : "bg-destructive"}`} />
                       <span className="font-body text-xs">
                         {isOnlineAvailable
-                          ? (lang === "ar" ? "متاح للحجز الإلكتروني" : "Available for Online Booking")
-                          : (lang === "ar" ? "غير متاح للحجز الإلكتروني" : "Not available for online booking")}
+                          ? (lang === "ar" ? "متاح للحجز الإلكتروني" : "Book Online")
+                          : (lang === "ar" ? "غير متاح للحجز الإلكتروني" : "Not Available")}
                       </span>
                     </div>
                   )}
 
                   {doctor.hideBooking !== true && (
-                    isOnlineAvailable ? (
+                    fromBooking ? (
+                      canBookSlot ? (
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={handleBookSlot}
+                          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-body text-sm tracking-wider uppercase hover:bg-primary/90 transition-colors text-center"
+                        >
+                          {lang === "ar" ? "احجز الموعد" : "Book Slot"}
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => navigate(`/appointment-request?doctor=${doctor.id}`)}
+                          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-body text-sm tracking-wider uppercase hover:bg-primary/90 transition-colors text-center"
+                        >
+                          {lang === "ar" ? "طلب موعد" : "Request Appointment"}
+                        </motion.button>
+                      )
+                    ) : isOnlineAvailable ? (
                       <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}

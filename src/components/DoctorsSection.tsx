@@ -37,14 +37,14 @@ const DoctorCard = ({ doc }: { doc: Doctor }) => {
             {(lang === "ar" ? doc.languagesAr : doc.languages).map((l) => (
               <span key={l} className="px-2.5 py-0.5 rounded-full bg-secondary/40 text-[10px] font-body text-foreground">{l}</span>
             ))}
-          </div>
+          </div>  
           {doc.hideBooking !== true && (
             <div className={`flex items-center gap-1.5 mb-2 ${doc.availableOnline !== false ? "text-green-600" : "text-destructive"}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${doc.availableOnline !== false ? "bg-green-500" : "bg-destructive"}`} />
               <span className="font-body text-[10px]">
                 {doc.availableOnline !== false
-                  ? (lang === "ar" ? "متاح للحجز الإلكتروني" : "Available for Online Booking")
-                  : (lang === "ar" ? "غير متاح للحجز الإلكتروني" : "Not available for online booking")}
+                  ? (lang === "ar" ? "متاح للحجز الإلكتروني" : "Book Online")
+                  : (lang === "ar" ? "غير متاح للحجز الإلكتروني" : "Not Available")}
               </span>
             </div>
           )}

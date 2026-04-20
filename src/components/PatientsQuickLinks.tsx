@@ -14,7 +14,7 @@ const PatientsQuickLinks = () => {
     { icon: Bed, label: t("duringYourStay"), href: "/patients-visitors" },
     { icon: ScrollText, label: t("patientBillOfRights"), href: "/patients-visitors" },
     { icon: MapPin, label: t("internationalPatient"), href: "/international-patient" },
-    { icon: FileText, label: t("medicalRecordsForm"), href: "/patients-visitors" },
+    // { icon: FileText, label: t("medicalRecordsForm"), href: "/patients-visitors" },
   ];
 
   return (
