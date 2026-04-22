@@ -184,24 +184,29 @@ const HomeHealth = () => {
             <section className="pb-12 mt-10">
               <div className="container mx-auto px-6">
                 <div className="max-w-4xl mx-auto">
-                  <div className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8">
-                    <div className="space-y-3 font-body text-sm text-foreground">
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4 text-muted-foreground" />
-                        <p>
-                          <span className="text-muted-foreground">{lang === "ar" ? "واتساب:" : "WhatsApp:"}</span>{" "}
-                          <a href="https://wa.me/96566320717" className="hover:text-accent transition-colors">+965 66320717</a>
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <p>
-                          <span className="text-muted-foreground">{lang === "ar" ? "للاستفسار اتصل:" : "For inquiry call:"}</span>{" "}
-                          <a href="tel:+96525360500" className="hover:text-accent transition-colors">+965 25360500</a>
-                        </p>
+                  <ScrollAnimationWrapper>
+                    <div className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8 text-center">
+                      <h2 className="text-2xl md:text-3xl font-serif text-foreground mb-4">
+                        {isAr ? "استفسر اليوم" : "Enquire Now"}
+                      </h2>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <a
+                          href="https://wa.me/96566320717"
+                          className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full font-body text-xs tracking-[0.2em] uppercase hover:bg-primary/90 transition-colors"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {isAr ? "واتساب: +965 66320717" : "WhatsApp: +965 66320717"}
+                        </a>
+                        <a
+                          href="tel:+96525360500"
+                          className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-full font-body text-xs tracking-[0.2em] uppercase hover:bg-primary/90 transition-colors"
+                        >
+                          <Phone className="w-4 h-4" />
+                          {isAr ? "اتصال: +965 25360500" : "Call: +965 25360500"}
+                        </a>
                       </div>
                     </div>
-                  </div>
+                  </ScrollAnimationWrapper>
                 </div>
               </div>
             </section>

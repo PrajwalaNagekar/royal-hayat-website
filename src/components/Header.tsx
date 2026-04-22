@@ -113,7 +113,7 @@ const Header = () => {
   const contactSubLinks = [
     { label: t("bookAppointment"), href: "/book-appointment", icon: Phone, desc: lang === "ar" ? "احجز موعدك مع أطبائنا" : "Schedule your visit with our doctors" },
     { label: lang === "ar" ? "المرضى الدوليون" : "International Patient", href: "/international-patient", icon: MapPin, desc: lang === "ar" ? "دعم مخصص للمرضى الدوليين" : "Dedicated support for international patients" },
-    { label: lang === "ar" ? "اتصل بنا" : "Call Us", href: "tel:+96525360555", icon: Phone, desc: "+965 2536 0555" },
+    { label: lang === "ar" ? "اتصل بنا" : "Call Us", href: "tel:+96525360000", icon: Phone, desc: "+965 2536 0000" },
   ];
 
   const handleDropdownEnter = (key: string) => {
@@ -236,7 +236,7 @@ const Header = () => {
   }, [searchQuery, searchIndex]);
 
   const linkClass =
-    "text-foreground font-body text-[13px] tracking-wide hover:text-accent transition-colors duration-300 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-[-4px] after:left-0 after:bg-accent after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left inline-flex items-center whitespace-nowrap";
+    "text-foreground font-body text-[14px] tracking-wide hover:text-accent transition-colors duration-300 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-[-4px] after:left-0 after:bg-accent after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left inline-flex items-center whitespace-nowrap";
 
   const getSubLinks = (key: string) => {
     switch (key) {
@@ -346,43 +346,42 @@ const Header = () => {
         {/* Row 1: Logo */}
         <div ref={logoRowRef} className="hidden md:block border-b border-border/50">
           <div className="container mx-auto flex items-center justify-between py-3 px-4 md:px-6">
-            <div className="flex-1" />
+            <div className="flex-1 flex items-center justify-start">
+              {/* Language capsule toggle EN | العربية */}
+              <div className="flex items-center bg-muted/40 rounded-full border border-border p-0.5">
+                <button
+                  onClick={() => setLang("en")}
+                  className={`rounded-full font-semibold tracking-wide transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "en"
+                    ? "bg-accent text-accent-foreground shadow-sm"
+                    : "bg-transparent text-muted-foreground hover:bg-background/60"
+                    }`}
+                  aria-label="English"
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLang("ar")}
+                  className={`rounded-full font-semibold transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "ar"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-transparent text-muted-foreground hover:bg-background/60"
+                    }`}
+                  aria-label="العربية"
+                >
+                  العربية
+                </button>
+              </div>
+            </div>
             <Link to="/">
               <img src={logoFull} alt="Royale Hayat Hospital" className="h-16 md:h-[72px] w-auto" />
             </Link>
             <div className="flex-1 flex items-center justify-end">
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
-                  <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
-                    <Phone className="w-3.5 h-3.5" />  +965 0000 2536
-                  </a>
-                  <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
-                    <Mail className="w-3.5 h-3.5" /> info@royalehayat.com
-                  </a>
-                </div>
-                {/* Language capsule toggle EN | العربية — below phone / contact line */}
-                <div className="flex items-center bg-muted/40 rounded-full border border-border p-0.5">
-                  <button
-                    onClick={() => setLang("en")}
-                    className={`rounded-full font-semibold tracking-wide transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "en"
-                      ? "bg-accent text-accent-foreground shadow-sm"
-                      : "bg-transparent text-muted-foreground hover:bg-background/60"
-                      }`}
-                    aria-label="English"
-                  >
-                    EN
-                  </button>
-                  <button
-                    onClick={() => setLang("ar")}
-                    className={`rounded-full font-semibold transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "ar"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-transparent text-muted-foreground hover:bg-background/60"
-                      }`}
-                    aria-label="العربية"
-                  >
-                    العربية
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 font-body text-sm text-muted-foreground">
+                <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
+                  <Phone className="w-4 h-4" /> +965 2536 0000
+                </a>
+                <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
+                  <Mail className="w-4 h-4" /> info@royalehayat.com
+                </a>
               </div>
             </div>
           </div>
@@ -409,17 +408,17 @@ const Header = () => {
                 {item.href.startsWith("/") ? (
                   <Link to={item.href} className={linkClass}>
                     <span className="inline-flex items-center gap-1.5 w-fit">
-                      <NavIcon className="w-3.5 h-3.5 shrink-0 text-primary" aria-hidden />
+                      <NavIcon className="w-4 h-4 shrink-0 text-primary" aria-hidden />
                       <span>{item.label}</span>
-                      {item.hasDropdown && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
+                      {item.hasDropdown && <ChevronDown className="w-4 h-4 shrink-0" />}
                     </span>
                   </Link>
                 ) : (
                   <a href={item.href} className={linkClass}>
                     <span className="inline-flex items-center gap-1.5 w-fit">
-                      <NavIcon className="w-3.5 h-3.5 shrink-0 text-primary" aria-hidden />
+                      <NavIcon className="w-4 h-4 shrink-0 text-primary" aria-hidden />
                       <span>{item.label}</span>
-                      {item.hasDropdown && <ChevronDown className="w-3.5 h-3.5 shrink-0" />}
+                      {item.hasDropdown && <ChevronDown className="w-4 h-4 shrink-0" />}
                     </span>
                   </a>
                 )}
