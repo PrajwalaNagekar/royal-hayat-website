@@ -31,6 +31,13 @@ const DepartmentsSection = () => {
     );
   });
 
+  const sortedFilteredDepts = [...filteredDepts].sort((a, b) =>
+    (lang === "ar" ? a.nameAr : a.name).localeCompare(
+      lang === "ar" ? b.nameAr : b.name,
+      lang === "ar" ? "ar" : "en"
+    )
+  );
+
   const scrollDoctors = (direction: "left" | "right") => {
     if (doctorScrollRef.current) {
       const isMobile = window.innerWidth < 768;
@@ -91,8 +98,8 @@ const DepartmentsSection = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-          {filteredDepts.length > 0 ? (
-            (filteredDepts).map((dept) => {
+          {sortedFilteredDepts.length > 0 ? (
+            (sortedFilteredDepts).map((dept) => {
               const origIdx = getOriginalIndex(dept);
               const isExpanded = openIndex === origIdx;
 
@@ -110,7 +117,7 @@ const DepartmentsSection = () => {
                   {!isExpanded ? (
                     /* Collapsed: Image card */
                     <>
-                      <div className="relative h-36 md:h-40 overflow-hidden">
+                      <div className="relative h-52 md:h-60 overflow-hidden">
                         <img
                           src={dept.img}
                           alt={lang === "ar" ? dept.nameAr : dept.name}
@@ -142,7 +149,7 @@ const DepartmentsSection = () => {
                     >
                       {/* Left: Image + Info */}
                       <div className="lg:w-2/5 relative">
-                        <div className="relative h-48 lg:h-full min-h-[320px] overflow-hidden">
+                        <div className="relative h-72 lg:h-full min-h-[380px] overflow-hidden">
                           <img
                             src={dept.img}
                             alt={lang === "ar" ? dept.nameAr : dept.name}

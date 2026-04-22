@@ -142,8 +142,8 @@ const HospitalityServices = () => {
           <ScrollAnimationWrapper>
             <p className="text-accent text-xs tracking-[0.3em] uppercase font-body mb-3">{t("premiumExperience")}</p>
             <h1 className="text-4xl md:text-5xl font-serif text-foreground mb-4">
-              {section === "halls" ? (isAr ? "القاعات الفاخرة" : "Luxury Halls")
-                : section === "suites" ? (isAr ? "الأجنحة الفاخرة" : "Luxury Suites")
+              {section === "halls" ? (isAr ? "القاعات الفاخرة" : " Halls")
+                : section === "suites" ? (isAr ? "الأجنحة الفاخرة" : " Suites")
                   : section === "spa" ? (isAr ? "سبا إليمنتس" : "Elements Spa")
                     : section === "cafe" ? (isAr ? "مقهى الليوان" : "Al Liwan Café")
                       : t("luxuryServices")}
@@ -295,7 +295,7 @@ const HospitalityServices = () => {
       </section>}
 
       {/* ===== AL LIWAN CAFÉ ===== */}
-      {show("cafe") && <section className="py-6">
+      {section === "cafe" && <section className="py-6">
         <div className="container mx-auto px-6 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <ScrollAnimationWrapper>
@@ -328,7 +328,7 @@ const HospitalityServices = () => {
       </section>}
 
       {/* ===== ELEMENTS SPA ===== */}
-      {show("spa") && <section className="py-6 bg-primary/5">
+      {section === "spa" && <section className="py-6 bg-primary/5">
         <div className="container mx-auto px-6 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-10 items-start">
             <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center order-2 lg:order-1">
@@ -577,6 +577,80 @@ const HospitalityServices = () => {
               </Link>
             </div>
           </ScrollAnimationWrapper>
+        </div>
+      </section>}
+
+      {/* ===== ELEMENTS SPA (Show All Order) ===== */}
+      {showAll && <section className="py-6 bg-primary/5">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="grid lg:grid-cols-2 gap-10 items-start">
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center order-2 lg:order-1">
+              <div className="text-center">
+                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                <p className="font-body text-xs text-muted-foreground">{isAr ? "صور السبا قريباً" : "Elements Spa images coming soon"}</p>
+              </div>
+            </div>
+            <ScrollAnimationWrapper className="order-1 lg:order-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-serif text-foreground">{isAr ? "سبا إليمنتس من بانيان تري" : "Elements Spa by Banyan Tree"}</h2>
+              </div>
+              <div className="space-y-4 font-body text-sm text-muted-foreground leading-relaxed">
+                <p>{isAr
+                  ? "سبا إليمنتس، بالتعاون مع فنادق ومنتجعات بانيان تري الحائزة على جوائز، يجلب جوهر العلاجات التقليدية وتقاليد العافية الشاملة إلى مستشفى رويال حياة."
+                  : "Elements Spa, in collaboration with the award-winning Banyan Tree Hotels & Resorts, brings the essence of time-honored remedies and holistic wellness traditions to Royale Hayat Hospital."}</p>
+                <h4 className="font-serif text-base text-foreground !mb-2">{isAr ? "خدماتنا تشمل:" : "Our Services Include:"}</h4>
+                <div className="space-y-2">
+                  {(isAr ? ["التدليك المميز", "مقشرات ومرطبات الجسم", "العناية بالوجه وتجديد البشرة", "علاجات اليدين والقدمين", "علاجات الشعر"] : ["Signature Massages", "Body Scrubs & Conditioners", "Facials & Skin Rejuvenation", "Hand & Foot Therapies", "Hair Treatments"]).map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />
+                      <span className="font-body text-sm text-foreground">{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <p>{isAr
+                  ? "لمزيد من التفاصيل حول سبا إليمنتس، يرجى زيارة الموقع – "
+                  : "For more details about Elements Spa, please visit the website – "}
+                  <a href="https://www.banyantreespa.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">www.banyantreespa.com</a>
+                </p>
+              </div>
+            </ScrollAnimationWrapper>
+          </div>
+        </div>
+      </section>}
+
+      {/* ===== AL LIWAN CAFÉ (Show All Order) ===== */}
+      {showAll && <section className="py-6">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <ScrollAnimationWrapper>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Coffee className="w-6 h-6 text-accent" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-serif text-foreground">{t("alLiwanCafe")}</h2>
+              </div>
+              <div className="space-y-4 font-body text-sm text-muted-foreground leading-relaxed">
+                {isAr ? (<>
+                  <p>مقهى الليوان هو صالة قهوة ومطعم ترحيبي يقع في ردهة مستشفى رويال حياة. يقدم طعاماً محضراً طازجاً وحلويات شهية في بيئة راقية. يمكن للضيوف الاستمتاع بخدمة الواي فاي المجانية أثناء الاسترخاء.</p>
+                  <p>تتضمن القائمة مجموعة متنوعة من العصائر الطازجة والسموذي والبرغر والسلطات والساندويتشات واللفائف، بالإضافة إلى تشكيلة من الكعك والبسكويت والقهوة والشاي المتخصص.</p>
+                  <p>مقهى الليوان مفتوح من الساعة 8 صباحاً حتى 11 مساءً.</p>
+                </>) : (<>
+                  <p>Al Liwan Café is a welcoming coffee lounge and diner located in the lobby of Royale Hayat Hospital (RHH). It offers freshly prepared food and delectable desserts in a sophisticated environment. Guests can enjoy amenities like free Wi-Fi while relaxing in comfort.</p>
+                  <p>The menu features a variety of options, including freshly squeezed juices, smoothies, burgers, exotic salads, sandwiches, and wraps, along with an assortment of cakes, cookies, and specialty coffees and teas.</p>
+                  <p>Al Liwan Café is open from 8 a.m. to 11 p.m., making it a convenient spot for breakfast, lunch, or dinner.</p>
+                </>)}
+              </div>
+            </ScrollAnimationWrapper>
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
+              <div className="text-center">
+                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                <p className="font-body text-xs text-muted-foreground">{isAr ? "صور المقهى قريباً" : "Al Liwan Café images coming soon"}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>}
 

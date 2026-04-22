@@ -29,7 +29,7 @@ const leaders = [
       "بدأ رحلته التعليمية في كلية الطب بجامعة الكويت. الدكتور المزيدي عضو في البورد الكويتي للجراحة العامة والكلية الملكية للجراحين (إنجلترا)، حيث تدرب على جراحة السمنة والقولون والمستقيم في لندن، المملكة المتحدة.",
       "الدكتور المزيدي ملتزم بتحويل المشهد الصحي في الكويت. قاد العديد من المبادرات الهادفة إلى دمج التقنيات المتطورة في أنظمة تقديم الرعاية الصحية وتحسين نتائج المرضى وتعزيز الكفاءة العامة.",
     ],
-    image: "",
+    image: "/images/doctors/sulaiman-almazeedi.png",
   },
   {
     initials: "AE",
@@ -53,7 +53,7 @@ const leaders = [
       "في مجال اضطرابات الدورة الشهرية، يقدم علاجات مبتكرة مثل الاستئصال البطاني بتقنية نوفاشور. تشمل خبرته الجراحية إجراءات المنظار الرحمي وجراحات المنظار البطني.",
       "بالإضافة إلى ذلك، يكرس الدكتور المرضي جهوده لإدارة اضطرابات المسالك البولية الأنثوية وقاع الحوض، وإجراء دراسات ديناميكية البول ومسح المثانة وقاع الحوض.",
     ],
-    image: "",
+    image: "/images/doctors/abubakr-elmardi.png",
   },
   {
     initials: "OE",
@@ -73,7 +73,7 @@ const leaders = [
       "حاصل على درجة الماجستير في التخدير والعناية المركزة الجراحية من كلية الطب بالإسكندرية، تليها درجة الدكتوراه في التخدير والعناية المركزة وإدارة الألم من جامعة الإسكندرية عام 1982. عضو في الجمعية الدولية لدراسة الألم.",
       "الدكتور الخطيب ذو خبرة عالية في مجالات متخصصة متعددة، بما في ذلك تخدير التوليد والتسكين، وإجراء التخدير فوق الجافية للولادة. لديه فهم عميق لإدارة التخدير للمرضى عاليي الخطورة وكبار السن، وخبرة في طب العناية المركزة الجراحية للبالغين والأطفال.",
     ],
-    image: "",
+    image: "/images/doctors/omar1.png",
   },
   {
     initials: "SM",
@@ -95,7 +95,7 @@ const leaders = [
       "مع خبرة قيادية سابقة في أدوار التمويل والمحاسبة والخزينة عبر المنظمات متعددة الجنسيات، يقدم السيد شيبو نهجاً متوازناً يجمع بين الانضباط العملياتي والرؤية الاستراتيجية والالتزام العميق تجاه الناس والهدف.",
       "وهو حاصل على شهادات CMA (الولايات المتحدة الأمريكية) وACMA الهند مع مؤهلات IFRS وتعليم تنفيذي في استراتيجية الرعاية الصحية من كلية هارفارد تي إتش تشان للصحة العامة.",
     ],
-    image: "",
+    image: "/images/doctors/Shibu-Mathew.png",
   },
   {
     initials: "HG",
@@ -117,7 +117,7 @@ const leaders = [
       "يتمتع بخبرة واسعة في التخدير العام والموضعي لجميع التخصصات والمرضى عاليي الخطورة، بما في ذلك تخدير جراحات السمنة والتخدير فوق الجافية للولادة الطبيعية والقيصرية. لديه تخصص فرعي في تخدير الأطفال وحديثي الولادة وذوي الاحتياجات الخاصة.",
       "في إدارة الألم المزمن، يركز على آلام العمود الفقري بالحقن العلاجية وقد كان رائداً في الحقن العلاجية الموجهة بالأشعة المقطعية للعمود الفقري، مؤسساً أول مركز مؤهل في الكويت والشرق الأوسط. تشمل خبرته إدارة الألم المزمن لحالات مثل الصداع والهربس النطاقي والألم العضلي الليفي وألم السرطان.",
     ],
-    image: "",
+    image: "/images/doctors/hamid-ghaderi.png",
   },
 ];
 
@@ -139,7 +139,7 @@ const LeaderCard = ({ leader, lang }: { leader: typeof leaders[0] & { image?: st
       <div className="flex flex-col md:flex-row">
         {/* Photo / Avatar side */}
         <div className="md:w-64 flex-shrink-0 bg-primary/5 flex items-center justify-center p-8 md:p-10">
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary/20 overflow-hidden">
+          <div className="w-44 h-44 md:w-60 md:h-60 rounded-2xl bg-primary/10 flex items-center justify-center border-4 border-primary/20 overflow-hidden">
             {leader.image ? (
               <img
                 src={leader.image}
@@ -159,7 +159,7 @@ const LeaderCard = ({ leader, lang }: { leader: typeof leaders[0] & { image?: st
           )}
           <div className="space-y-0.5 mb-4">
             {roles.map((r, i) => (
-              <p key={i} className="font-body text-sm text-muted-foreground">{r}</p>
+              <p key={i} className="font-body text-sm text-accent">{r}</p>
             ))}
           </div>
           <div className={`space-y-3 overflow-hidden transition-all duration-500 ${expanded ? "max-h-[2000px]" : "max-h-[100px]"}`}>
@@ -189,7 +189,7 @@ const AboutUs = () => {
   const [searchParams] = useSearchParams();
   const section = searchParams.get("section");
   const showAll = !section;
-  const show = (s: string) => showAll || section === s;
+  const show = (s: string) => showAll || section === s; 
 
   const values = [
     { icon: Heart, titleKey: "patientCenteredCare", descKey: "patientCenteredCareDesc" },

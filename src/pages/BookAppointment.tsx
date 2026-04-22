@@ -97,7 +97,7 @@ const BookAppointment = () => {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [patientCountryCode, setPatientCountryCode] = useState("+965");
-  const [patientAge, setPatientAge] = useState("");
+  const [patientDob, setPatientDob] = useState("");
   const [patientGender, setPatientGender] = useState("");
   const [patientErrors, setPatientErrors] = useState<Record<string, string>>({});
 
@@ -156,6 +156,12 @@ const BookAppointment = () => {
   const selectedDoctorObj = bookingPath === "doctor"
     ? allDoctorsFlat.find(d => d.id === selectedDoctor)
     : doctors.find((d) => d.id === selectedDoctor);
+  const formattedDob = patientDob
+    ? patientDob.split("-").reverse().join("/")
+    : "";
+  const formattedSelectedDate = selectedDate
+    ? selectedDate.split("-").reverse().join("/")
+    : "";
 
   const steps = [
     { label: isAr ? "القسم" : "Department", icon: Building2 },
@@ -170,8 +176,8 @@ const BookAppointment = () => {
     if (!patientName.trim()) errors.name = isAr ? "الاسم الكامل مطلوب" : "Full name is required";
     if (!patientPhone.trim()) errors.phone = isAr ? "رقم الهاتف مطلوب" : "Phone number is required";
     else if (!/^\d{7,15}$/.test(patientPhone.trim())) errors.phone = isAr ? "أدخل رقم هاتف صحيح" : "Enter a valid phone number";
-    if (!patientAge.trim()) errors.age = isAr ? "العمر مطلوب" : "Age is required";
-    else if (isNaN(Number(patientAge)) || Number(patientAge) < 0 || Number(patientAge) > 150) errors.age = isAr ? "أدخل عمراً صحيحاً" : "Enter a valid age";
+    if (!patientDob) errors.dob = isAr ? "تاريخ الميلاد مطلوب" : "Date of birth is required";
+    else if (new Date(patientDob) > new Date()) errors.dob = isAr ? "أدخل تاريخ ميلاد صحيحاً" : "Enter a valid date of birth";
     if (!patientGender) errors.gender = isAr ? "الجنس مطلوب" : "Gender is required";
     setPatientErrors(errors);
     return Object.keys(errors).length === 0;
@@ -183,7 +189,7 @@ const BookAppointment = () => {
       case 0: return selectedDept !== null;
       case 1: return selectedDoctor !== null;
       case 2: return selectedDate !== "" && selectedSlot !== null;
-      case 3: return patientType === "new" && patientName.trim() !== "" && patientPhone.trim() !== "" && patientAge.trim() !== "" && patientGender !== "";
+      case 3: return patientType === "new" && patientName.trim() !== "" && patientPhone.trim() !== "" && patientDob !== "" && patientGender !== "";
       default: return true;
     }
   };
@@ -857,13 +863,16 @@ const BookAppointment = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            {t("age")} <span className="text-destructive">*</span>
+                            {isAr ? "تاريخ الميلاد" : "Date of Birth"} <span className="text-destructive">*</span>
                           </label>
-                          <input type="number" min="0" max="150" value={patientAge}
-                            onChange={(e) => { setPatientAge(e.target.value); setPatientErrors(prev => ({ ...prev, age: "" })); }}
-                            placeholder={t("enterAge")}
-                            className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.age ? "border-destructive" : "border-border"}`} />
-                          {patientErrors.age && <p className="font-body text-xs text-destructive mt-1">{patientErrors.age}</p>}
+                          <input
+                            type="date"
+                            value={patientDob}
+                            max={new Date().toISOString().split("T")[0]}
+                            onChange={(e) => { setPatientDob(e.target.value); setPatientErrors(prev => ({ ...prev, dob: "" })); }}
+                            className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.dob ? "border-destructive" : "border-border"}`}
+                          />
+                          {patientErrors.dob && <p className="font-body text-xs text-destructive mt-1">{patientErrors.dob}</p>}
                         </div>
                         <div>
                           <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
@@ -910,10 +919,10 @@ const BookAppointment = () => {
                     {[
                       { label: t("department"), value: selectedDeptObj?.name || selectedDoctorObj?.specialty || "", icon: Building2 },
                       { label: t("doctor"), value: selectedDoctorObj?.name || "", icon: User },
-                      { label: isAr ? "التاريخ والوقت" : "Date & Time", value: selectedDate && selectedSlot ? `${selectedDate}  •  ${formatSlot(selectedSlot)}` : "", icon: Clock },
+                      { label: isAr ? "التاريخ والوقت" : "Date & Time", value: selectedDate && selectedSlot ? `${formattedSelectedDate}  •  ${formatSlot(selectedSlot)}` : "", icon: Clock },
                       { label: t("patient"), value: patientName, icon: ClipboardList },
                       { label: t("phone"), value: `${patientCountryCode} ${patientPhone}`, icon: Stethoscope },
-                      { label: t("age"), value: patientAge, icon: User },
+                      { label: isAr ? "تاريخ الميلاد" : "Date of Birth", value: formattedDob, icon: User },
                       { label: t("gender"), value: patientGender === "male" ? t("male") : t("female"), icon: User },
                     ].map((row) => (
                       <div key={row.label} className="flex items-start gap-4 py-3 border-b border-border last:border-0">

@@ -518,7 +518,7 @@ const SpecializedCare = () => {
                                 onClick={() => navigate("/doctors")}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-body text-xs tracking-[0.15em] uppercase rounded-full hover:bg-primary/90 transition-colors"
                               >
-                                {lang === "ar" ? "اعرف المزيد" : "Learn More"} <ArrowRight className="w-3.5 h-3.5" />
+                                {lang === "ar" ? "اعرف المزيد" : "Read More"} <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>

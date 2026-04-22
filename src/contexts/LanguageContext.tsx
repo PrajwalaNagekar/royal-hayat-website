@@ -176,7 +176,7 @@ const translations: Translations = {
   whatWeOffer: { en: "What We Offer", ar: "ما نقدمه" },
   specializedCare: { en: "Specialized Care", ar: "رعاية متخصصة" },
   specializedDesc: { en: "Tailored, premium medical services designed around your individual needs, delivered with compassion and clinical excellence.", ar: "خدمات طبية فاخرة مصممة حسب احتياجاتك الفردية، تُقدم بالرحمة والتميز السريري." },
-  learnMore: { en: "Learn More", ar: "اعرف المزيد" },
+  learnMore: { en: "Read More", ar: "اعرف المزيد" },
   // Departments
   ourSpecialties: { en: "Our Specialties", ar: "تخصصاتنا" },
   medicalDepartments: { en: "Medical Departments", ar: "الأقسام الطبية" },

@@ -5,8 +5,8 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ScrollAnimationWrapper from "@/components/ScrollAnimationWrapper";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Heart, Users, Clock, GraduationCap, Shield, Award, AlertTriangle, Mail, MapPin, ArrowUpRight } from "lucide-react";
-import { useState } from "react";
+import { Heart, Users, Clock, GraduationCap, Shield, Award, AlertTriangle, Mail, MapPin, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 
 const categories = [
@@ -146,6 +146,7 @@ const openPositions = [
 const WorkWithUs = () => {
   const { lang } = useLanguage();
   const [activeCategory, setActiveCategory] = useState("View All");
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const section = searchParams.get("section");
   const showAll = !section;
@@ -154,6 +155,14 @@ const WorkWithUs = () => {
   const filtered = activeCategory === "View All"
     ? openPositions
     : openPositions.filter(p => p.category === activeCategory);
+
+  const scrollCategories = (direction: "left" | "right") => {
+    if (!categoryScrollRef.current) return;
+    categoryScrollRef.current.scrollBy({
+      left: direction === "left" ? -260 : 260,
+      behavior: "smooth",
+    });
+  };
 
   const cultureItems = [
     { icon: Heart, title: lang === "ar" ? "ثقافة الرعاية" : "Culture of Care", desc: lang === "ar" ? "نحن نؤمن بأن رعاية فريقنا تؤدي إلى رعاية أفضل لمرضانا." : "We believe caring for our team leads to better care for our patients." },
@@ -229,21 +238,45 @@ const WorkWithUs = () => {
             </div>}
           </ScrollAnimationWrapper>
 
-          {/* Category filter tabs - horizontal scrollable */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`whitespace-nowrap px-5 py-2 rounded-full text-xs font-body tracking-wide border transition-all ${
-                  activeCategory === cat
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-popover text-foreground border-border hover:border-primary/40"
-                }`}
-              >
-                {cat.toUpperCase()}
-              </button>
-            ))}
+          {/* Category filter tabs - horizontal scrollable with arrows */}
+          <div className="relative mb-8 flex items-center">
+            <button
+              type="button"
+              onClick={() => scrollCategories("left")}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full border border-border bg-background/95 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shadow-sm"
+              aria-label={lang === "ar" ? "تمرير الفئات لليسار" : "Scroll categories left"}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <div
+              ref={categoryScrollRef}
+              className="mx-10 flex items-center gap-2 overflow-x-auto py-1 scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`whitespace-nowrap px-5 py-2 rounded-full text-xs font-body tracking-wide border transition-all ${
+                    activeCategory === cat
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-popover text-foreground border-border hover:border-primary/40"
+                  }`}
+                >
+                  {cat.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => scrollCategories("right")}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full border border-border bg-background/95 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors shadow-sm"
+              aria-label={lang === "ar" ? "تمرير الفئات لليمين" : "Scroll categories right"}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Job cards */}

@@ -55,48 +55,37 @@ const CSR = () => {
               Your browser does not support the video tag.
             </video>
           </motion.div>
+          <div className="max-w-3xl mx-auto mt-8 space-y-4">
+            <p className="font-body text-base text-muted-foreground leading-relaxed text-center">
+              {isAr
+                ? "بإلهام من رؤية للشفاء تتجاوز جدران المستشفى، يمزج الصرح بين الفن والطبيعة والتصميم المعاصر في بيان حضري ذو مغزى."
+                : "Inspired by a vision of healing that extends beyond hospital walls, the monument blends art, nature, and contemporary design into a meaningful urban statement."}
+            </p>
+            <p className="font-body text-base text-muted-foreground leading-relaxed text-center">
+              {isAr
+                ? "بشكله الدائري الذي يمثل الاستمرارية وزهرته المتفتحة التي تعكس النمو والحيوية، يقف هذا المعلم كتحية للأمل والعافية والتواصل المجتمعي. أكثر من مجرد هيكل، إنه هدية للكويت - يجمّل أفق المدينة بينما يجسد التزاماً راسخاً بالرحمة والرعاية والتفاؤل للأجيال القادمة."
+                : "With its circular form representing continuity and its blooming flower reflecting growth and vitality, the landmark stands as a tribute to hope, wellness, and community connection. More than a structure, it is a gift to Kuwait - beautifying the cityscape while embodying a lasting commitment to compassion, care, and optimism for generations to come."}
+            </p>
+            <p className="font-serif text-xl text-primary text-center italic mt-6">
+              {isAr ? "مستشفى رويال حياة ... أكثر من مجرد رعاية، شريك للحياة" : "Royale Hayat Hospital ... More than care, A partner for life"}
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Initiatives */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto space-y-16 lg:space-y-24">
-            {/* Monument Description */}
+          <div className="max-w-4xl mx-auto space-y-10">
             <ScrollAnimationWrapper>
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <p className="font-body text-base text-muted-foreground leading-relaxed text-center">
-                    {isAr
-                      ? "بإلهام من رؤية للشفاء تتجاوز جدران المستشفى، يمزج الصرح بين الفن والطبيعة والتصميم المعاصر في بيان حضري ذو مغزى."
-                      : "Inspired by a vision of healing that extends beyond hospital walls, the monument blends art, nature, and contemporary design into a meaningful urban statement."}
-                  </p>
-                  <p className="font-body text-base text-muted-foreground leading-relaxed text-center">
-                    {isAr
-                      ? "بشكله الدائري الذي يمثل الاستمرارية وزهرته المتفتحة التي تعكس النمو والحيوية، يقف هذا المعلم كتحية للأمل والعافية والتواصل المجتمعي. أكثر من مجرد هيكل، إنه هدية للكويت - يجمّل أفق المدينة بينما يجسد التزاماً راسخاً بالرحمة والرعاية والتفاؤل للأجيال القادمة."
-                      : "With its circular form representing continuity and its blooming flower reflecting growth and vitality, the landmark stands as a tribute to hope, wellness, and community connection. More than a structure, it is a gift to Kuwait - beautifying the cityscape while embodying a lasting commitment to compassion, care, and optimism for generations to come."}
-                  </p>
-                  <p className="font-serif text-xl text-primary text-center italic mt-4">
-                    {isAr ? "مستشفى رويال حياة ... أكثر من مجرد رعاية، شريك للحياة" : "Royale Hayat Hospital ... More than care, A partner for life"}
-                  </p>
-                </div>
+              <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen border-y border-border/40 bg-primary/5 px-6 py-10 md:px-8 space-y-6">
+                <h3 className="font-serif text-2xl text-foreground text-center">
+                  {isAr ? "محاضرة التوعية بسرطان الثدي – جلسة داخل المستشفى أقيمت في 7 أكتوبر 2025" : "Breast Cancer Awareness Lecture - Hospital Session held on 7 October 2025"}
+                </h3>
                 <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
-                  <img
-                    src="/images/doctors/image4.png.png"
-                    alt="Royale Hayat Monument"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src="/images/doctors/image4.png.png" alt="Breast Cancer Awareness Hospital Session" className="w-full h-full object-cover" />
                 </div>
-              </div>
-            </ScrollAnimationWrapper>
-
-            {/* Breast Cancer Hospital */}
-            <ScrollAnimationWrapper>
-              <div className="space-y-8">
-                <div className="space-y-4 text-center">
-                  <h3 className="font-serif text-2xl text-foreground">
-                    {isAr ? "محاضرة التوعية بسرطان الثدي – جلسة في المستشفى أقيمت في 7 أكتوبر 2025" : "Breast Cancer Awareness Lecture – Hospital-Based Session held on 7th October 2025"}
-                  </h3>
+                <div className="max-w-3xl mx-auto space-y-4 text-center">
                   <p className="font-body text-base text-muted-foreground leading-relaxed">
                     {isAr
                       ? "داخل جدرانه، استضاف مستشفى رويال حياة محاضرة حصرية للتوعية بسرطان الثدي بقيادة فريقنا من الاستشاريين الخبراء. ركزت الجلسة على الكشف المبكر، وخيارات العلاج المتقدمة، والرعاية الشاملة للمرضى، بما في ذلك الرفاهية العاطفية."
@@ -108,23 +97,18 @@ const CSR = () => {
                       : "This luxurious and informative initiative reflects our dedication to empowering women with knowledge, compassion, and exceptional healthcare standards."}
                   </p>
                 </div>
-                <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
-                  <img
-                    src="/images/doctors/image.png.png"
-                    alt="Breast Cancer Awareness Session"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
               </div>
             </ScrollAnimationWrapper>
 
-            {/* Breast Cancer Burgan Bank */}
             <ScrollAnimationWrapper>
-              <div className="space-y-8">
-                <div className="space-y-4 text-center">
-                  <h3 className="font-serif text-2xl text-foreground">
-                    {isAr ? "محاضرة التوعية بسرطان الثدي – بنك برقان أقيمت في 16 أكتوبر 2025" : "Breast Cancer Awareness Lecture – Burgan Bank held on 16th October 2025"}
-                  </h3>
+              <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen border-y border-border/40 bg-primary/5 px-6 py-10 md:px-8 space-y-6">
+                <h3 className="font-serif text-2xl text-foreground text-center">
+                  {isAr ? "محاضرة التوعية بسرطان الثدي – بنك برقان أقيمت في 16 أكتوبر 2025" : "Breast Cancer Awareness Lecture - Burgan Bank Session held on 16 October 2025"}
+                </h3>
+                <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
+                  <img src="/images/doctors/image.png.png" alt="Breast Cancer Awareness Session at Burgan Bank" className="w-full h-full object-cover" />
+                </div>
+                <div className="max-w-3xl mx-auto space-y-4 text-center">
                   <p className="font-body text-base text-muted-foreground leading-relaxed">
                     {isAr
                       ? "كجزء من مبادراته المجتمعية المميزة، استضاف مستشفى رويال حياة محاضرة متميزة للتوعية بسرطان الثدي في بنك برقان. أرشد مستشارونا النخبة الحضور خلال أهمية الكشف المبكر والفحص الذاتي والممارسات الصحية الاستباقية، مما مكن النساء بالمعرفة والثقة."
@@ -136,23 +120,18 @@ const CSR = () => {
                       : "This initiative epitomizes Royale Hayat’s dedication to preventive healthcare and elevating public health awareness."}
                   </p>
                 </div>
-                <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
-                  <img
-                    src="/images/doctors/image2.png.png"
-                    alt="Breast Cancer Awareness at Burgan Bank"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
               </div>
             </ScrollAnimationWrapper>
 
-            {/* Special Olympics */}
             <ScrollAnimationWrapper>
-              <div className="space-y-8">
-                <div className="space-y-4 text-center">
-                  <h3 className="font-serif text-2xl text-foreground">
-                    {isAr ? "شارك مستشفى رويال حياة في الفعالية الثالثة للفحص الصحي للأولمبياد الخاص الكويتي التي أقيمت في 22 أكتوبر 2025" : "Royale Hayat Hospital participated in the 3rd Special Olympics Kuwait Health Screening Event held on 22nd Oct 2025"}
-                  </h3>
+              <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen border-y border-border/40 bg-primary/5 px-6 py-10 md:px-8 space-y-6">
+                <h3 className="font-serif text-2xl text-foreground text-center">
+                  {isAr ? "شارك مستشفى رويال حياة في الفعالية الثالثة للفحص الصحي للأولمبياد الخاص الكويتي التي أقيمت في 22 أكتوبر 2025" : "Royale Hayat Hospital participated in the 3rd Special Olympics Kuwait Health Screening Event held on 22 October 2025"}
+                </h3>
+                <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
+                  <img src="/images/doctors/image2.png.png" alt="Special Olympics Health Screening" className="w-full h-full object-cover" />
+                </div>
+                <div className="max-w-3xl mx-auto space-y-4 text-center">
                   <p className="font-body text-base text-muted-foreground leading-relaxed">
                     {isAr
                       ? "شارك مستشفى رويال حياة بفخر فريقاً طبياً متخصصاً بقيادة الدكتورة علياء علي إبراهيم، استشارية الأمراض الباطنية والجهاز التنفسي. قدمت المبادرة فحوصات صحية أساسية لـ 150 رياضياً من ذوي الاحتياجات الخاصة في دولة الكويت."
@@ -164,27 +143,22 @@ const CSR = () => {
                       : "This reflects the hospital’s continued commitment to community engagement, inclusivity, and promoting access to comprehensive, compassionate healthcare for all—especially athletes of determination."}
                   </p>
                 </div>
-                <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
-                  <img
-                    src="/images/doctors/image3.png.png"
-                    alt="Special Olympics Health Screening"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
               </div>
             </ScrollAnimationWrapper>
 
-            {/* International Conference */}
             <ScrollAnimationWrapper>
-              <div className="space-y-8">
-                <div className="space-y-4 text-center">
-                  <h3 className="font-serif text-2xl text-foreground">
-                    {isAr ? "المؤتمر الدولي لمستشفى رويال حياة حول مستجدات صحة المرأة الذي أقيم في 29 نوفمبر 2025" : "Royale Hayat Hospital’s International Conference on Updates in Women’s Health held on 29th November 2025"}
-                  </h3>
+              <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen border-y border-border/40 bg-primary/5 px-6 py-10 md:px-8 space-y-6">
+                <h3 className="font-serif text-2xl text-foreground text-center">
+                  {isAr ? "المؤتمر الدولي لمستشفى رويال حياة حول مستجدات صحة المرأة الذي أقيم في 29 نوفمبر 2025" : "Royale Hayat Hospital's International Conference on Updates in Women's Health held on 29 November 2025"}
+                </h3>
+                <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
+                  <img src="/images/doctors/image3.png.png" alt="Women's Health International Conference" className="w-full h-full object-cover" />
+                </div>
+                <div className="max-w-3xl mx-auto space-y-4 text-center">
                   <p className="font-body text-base text-muted-foreground leading-relaxed">
                     {isAr
                       ? "تشرف مستشفى رويال حياة باستضافة مؤتمر علمي حصري رفيع المستوى حول أحدث التطورات في صحة المرأة. اجتمع نخبة من الأطباء والاستشاريين من جميع أنحاء العالم لتبادل الرؤى واستعراض أفضل الممارسات واستكشاف الأساليب المبتكرة في رعاية صحة المرأة."
-                      : "Royale Hayat Hospital had the honor of hosting an exclusive, high-level scientific conference on the latest advancements in women’s health. Esteemed doctors and consultants from across the globe gathered to exchange insights, showcase best practices, and explore innovative approaches in women’s healthcare."}
+                      : "Royale Hayat Hospital had the honor of hosting an exclusive, high-level scientific conference on the latest advancements in women's health. Esteemed doctors and consultants from across the globe gathered to exchange insights, showcase best practices, and explore innovative approaches in women's healthcare."}
                   </p>
                   <p className="font-body text-base text-muted-foreground leading-relaxed">
                     {isAr
@@ -192,13 +166,6 @@ const CSR = () => {
                       : "This prestigious event reflects our unwavering commitment to delivering world-class, evidence-based care for women in Kuwait and the region."}
                   </p>
                 </div>
-                {/* <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden shadow-xl aspect-video bg-muted">
-                  <img
-                    src="/images/doctors/image.png.png"
-                    alt="Women's Health International Conference"
-                    className="w-full h-full object-cover"
-                  />
-                </div> */}
               </div>
             </ScrollAnimationWrapper>
           </div>

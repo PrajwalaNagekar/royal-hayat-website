@@ -345,13 +345,13 @@ const Header = () => {
 
         {/* Row 1: Logo */}
         <div ref={logoRowRef} className="hidden md:block border-b border-border/50">
-          <div className="container mx-auto flex items-center justify-between py-3 px-4 md:px-6">
+          <div className="container mx-auto flex items-center justify-between py-2.5 md:py-3 px-4 md:px-6 gap-3">
             <div className="flex-1 flex items-center justify-start">
               {/* Language capsule toggle EN | العربية */}
-              <div className="flex items-center bg-muted/40 rounded-full border border-border p-0.5">
+              <div className="flex items-center bg-muted/40 rounded-full border border-border p-0.5 md:scale-95 lg:scale-100 origin-left">
                 <button
                   onClick={() => setLang("en")}
-                  className={`rounded-full font-semibold tracking-wide transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "en"
+                  className={`rounded-full font-semibold tracking-wide transition-all duration-300 leading-none flex items-center justify-center px-2 md:px-2.5 h-6.5 md:h-7 text-[10px] md:text-[11px] ${lang === "en"
                     ? "bg-accent text-accent-foreground shadow-sm"
                     : "bg-transparent text-muted-foreground hover:bg-background/60"
                     }`}
@@ -361,7 +361,7 @@ const Header = () => {
                 </button>
                 <button
                   onClick={() => setLang("ar")}
-                  className={`rounded-full font-semibold transition-all duration-300 leading-none flex items-center justify-center px-2.5 h-7 text-[11px] ${lang === "ar"
+                  className={`rounded-full font-semibold transition-all duration-300 leading-none flex items-center justify-center px-2 md:px-2.5 h-6.5 md:h-7 text-[10px] md:text-[11px] ${lang === "ar"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-transparent text-muted-foreground hover:bg-background/60"
                     }`}
@@ -371,16 +371,16 @@ const Header = () => {
                 </button>
               </div>
             </div>
-            <Link to="/">
-              <img src={logoFull} alt="Royale Hayat Hospital" className="h-16 md:h-[72px] w-auto" />
+            <Link to="/" className="shrink-0">
+              <img src={logoFull} alt="Royale Hayat Hospital" className="h-14 md:h-16 lg:h-[72px] w-auto" />
             </Link>
             <div className="flex-1 flex items-center justify-end">
-              <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 font-body text-sm text-muted-foreground">
-                <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
-                  <Phone className="w-4 h-4" /> +965 2536 0000
+              <div className="flex flex-col lg:flex-row items-end justify-end gap-y-1 lg:gap-y-0 lg:gap-x-4 font-body text-xs lg:text-sm text-muted-foreground">
+                <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap">
+                  <Phone className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> +965 2536 0000
                 </a>
-                <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors">
-                  <Mail className="w-4 h-4" /> info@royalehayat.com
+                <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap">
+                  <Mail className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> info@royalehayat.com
                 </a>
               </div>
             </div>

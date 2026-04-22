@@ -117,7 +117,7 @@ const DepartmentDoctors = ({ doctors, lang }: { doctors: typeof allDoctors; lang
             to="/doctors"
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-body text-xs tracking-[0.15em] uppercase rounded-full hover:bg-primary/90 transition-colors"
           >
-            {lang === "ar" ? "اعرف المزيد" : "Learn More"} <span className="ltr-icon">→</span>
+            {lang === "ar" ? "اعرف المزيد" : "Read More"} <span className="ltr-icon">→</span>
           </Link>
         </div>
       </div>

@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import ChatButton from "@/components/ChatButton";
 import ScrollAnimationWrapper from "@/components/ScrollAnimationWrapper";
+import InsurancePartners from "@/components/InsurancePartners";
 import { Stethoscope, Shield, Bed, ClipboardList, Scale, Globe, CheckCircle2, Phone, Clock, Wifi, Tv, Newspaper, UtensilsCrossed, Sparkles, Search, AlertTriangle, Baby, Lock, Radio, Users, ChevronDown, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -279,6 +280,10 @@ const PatientsVisitors = () => {
                       <a href="tel:25360453" className="text-accent hover:underline font-semibold">25360453</a>.
                     </p>
                   </div>
+                </div>
+
+                <div className="mt-10 relative left-1/2 right-1/2 -mx-[50vw] w-screen">
+                  <InsurancePartners />
                 </div>
               </ScrollAnimationWrapper>
             </div>}

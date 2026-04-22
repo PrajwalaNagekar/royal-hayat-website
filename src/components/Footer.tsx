@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Clock, Ambulance, Send } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Send, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
 import logo from "@/assets/rhh-logo-full.png";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -34,9 +34,19 @@ const Footer = () => {
             <img src={logo} alt="Royale Hayat Hospital" className="h-20 w-auto brightness-0 invert opacity-90" />
             <p className="text-primary-foreground/70 font-body text-sm leading-relaxed">{t("footerDesc")}</p>
             <div className="flex items-center gap-3">
-              {["F", "I", "Y", "X"].map((letter) => (
-                <a key={letter} href="#" className="w-9 h-9 rounded-full border border-primary-foreground/30 flex items-center justify-center text-primary-foreground/70 font-body text-xs hover:text-accent hover:border-accent transition-colors">
-                  {letter}
+              {[
+                { key: "facebook", icon: Facebook, href: "#" },
+                { key: "instagram", icon: Instagram, href: "#" },
+                { key: "youtube", icon: Youtube, href: "#" },
+                { key: "x", icon: Twitter, href: "#" },
+              ].map((social) => (
+                <a
+                  key={social.key}
+                  href={social.href}
+                  className="w-9 h-9 rounded-full border border-primary-foreground/30 flex items-center justify-center text-primary-foreground/70 hover:text-accent hover:border-accent transition-colors"
+                  aria-label={social.key}
+                >
+                  <social.icon className="w-4 h-4" />
                 </a>
               ))}
             </div>
@@ -110,7 +120,7 @@ const Footer = () => {
         <div className="border-t border-secondary/10 pt-5 pb-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-primary-foreground/50 font-body text-xs">{t("allRightsReserved")}</p>
           <div className="flex items-center gap-6">
-            {[{ key: "androidApp" }, { key: "iosApp" }, { key: "privacyPolicy" }].map((l) => (
+            {[{ key: "privacyPolicy" }].map((l) => (
               <a key={l.key} href="#" className="text-primary-foreground/50 font-body text-xs hover:text-accent transition-colors">{t(l.key)}</a>
             ))}
           </div>

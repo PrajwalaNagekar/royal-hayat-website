@@ -168,6 +168,24 @@ const Doctors = () => {
   const grouped = getDoctorsByDepartment();
   const searchResults = searchDoctorsBySymptom(searchQuery);
   const isSearching = searchQuery.trim().length > 0;
+  const locale = lang === "ar" ? "ar" : "en";
+
+  const sortedGroupedEntries = Object.entries(grouped)
+    .map(([dept, docs]) => [
+      dept,
+      [...docs].sort((a, b) =>
+        (lang === "ar" ? a.nameAr : a.name).localeCompare(
+          lang === "ar" ? b.nameAr : b.name,
+          locale
+        )
+      ),
+    ] as const)
+    .sort(([deptA, docsA], [deptB, docsB]) =>
+      (lang === "ar" ? docsA[0]?.departmentAr || deptA : deptA).localeCompare(
+        lang === "ar" ? docsB[0]?.departmentAr || deptB : deptB,
+        locale
+      )
+    );
 
   return (
     <div className="min-h-screen bg-background pt-[var(--header-height,56px)]">
@@ -219,7 +237,7 @@ const Doctors = () => {
             </div>
           ) : (
             /* Department-grouped doctors */
-            Object.entries(grouped).map(([dept, docs]) => (
+            sortedGroupedEntries.map(([dept, docs]) => (
               <DepartmentRow
                 key={dept}
                 department={dept}
