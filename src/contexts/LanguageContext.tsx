@@ -265,7 +265,7 @@ const translations: Translations = {
   internationalPatients: { en: "International Patients", ar: "المرضى الدوليون" },
   // Footer / misc
   contact: { en: "Contact", ar: "اتصل بنا" },
-  luxuryServices: { en: "Luxury Services", ar: "الخدمات الفاخرة" },
+  luxuryServices: { en: "Services", ar: "الخدمات" },
   services: { en: "Services", ar: "الخدمات" },
   // Specialized care items
   womensHealth: { en: "Women's Health & Obstetrics", ar: "صحة المرأة والتوليد" },

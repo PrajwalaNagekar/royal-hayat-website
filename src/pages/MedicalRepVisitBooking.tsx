@@ -78,7 +78,7 @@ const MedicalRepVisitBooking = () => {
           <ScrollAnimationWrapper>
             <h2 className="text-2xl font-serif text-foreground mb-8">{isAr ? "روابط عامة" : "General Link"}</h2>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/book-appointment">
+              <Link to="https://calendly.com/rhhmedrep" target="_blank">
                 <Button size="lg" className="gap-2">
                   <CalendarCheck className="w-5 h-5" />
                   {isAr ? "احجز الآن" : "Book Now"}

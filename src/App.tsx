@@ -32,6 +32,25 @@ import NotFound from "./pages/NotFound.tsx";
 import ScrollToTopOnNav from "./components/ScrollToTopOnNav.tsx";
 
 const queryClient = new QueryClient();
+const inRoomEventGalleryImages = [
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776925513/DSC06020_ehruim.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776925529/DSC06022_xybmbl.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776925539/DSC06024_l5xmxc.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776925551/DSC06036_p19nrt.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776925567/DSC06045_jvt2rh.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776925643/DSC06052_ibvveb.jpg",
+];
+const gardeniaHallImages = [
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776927275/DSC08789_jchzn4.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776927267/DSC08760_co7jbw.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776927266/DSC08758_rtqu6e.jpg",
+];
+const alJouriHallImages = [
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776926516/DSC00056_hjzwvy.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776926527/DSC00058_d8vsgp.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776926678/DSC08997_okdxrp.jpg",
+  "https://res.cloudinary.com/dwhc8kzpv/image/upload/v1776926911/DSC08998_tgjegx.jpg",
+];
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -44,7 +63,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/book-appointment" element={<BookAppointment />} />
-            <Route path="/hospitality" element={<HospitalityServices />} />
+            <Route
+              path="/hospitality"
+              element={<HospitalityServices gardeniaHallImages={gardeniaHallImages} alJouriHallImages={alJouriHallImages} />}
+            />
             <Route path="/patients-visitors" element={<PatientsVisitors />} />
             <Route path="/al-safwa" element={<AlSafwaProgram />} />
             <Route path="/home-health" element={<HomeHealth />} />
@@ -64,7 +86,7 @@ const App = () => (
             <Route path="/medical-rep-visit-booking" element={<MedicalRepVisitBooking />} />
             <Route path="/medical-records-request" element={<MedicalRecordsRequest />} />
             <Route path="/infant-security" element={<TrackerWaveInfantSecurity />} />
-            <Route path="/in-room-events" element={<InRoomEvents />} />
+            <Route path="/in-room-events" element={<InRoomEvents galleryImages={inRoomEventGalleryImages} />} />
             <Route path="/job-application" element={<JobApplication />} />
             <Route path="/csr" element={<CSR />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

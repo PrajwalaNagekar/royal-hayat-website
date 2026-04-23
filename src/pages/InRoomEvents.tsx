@@ -6,7 +6,11 @@ import ScrollAnimationWrapper from "@/components/ScrollAnimationWrapper";
 import { Sparkles, Phone, CheckCircle2, Image, Video, Gift, UtensilsCrossed, UserCheck } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const InRoomEvents = () => {
+type InRoomEventsProps = {
+  galleryImages: string[];
+};
+
+const InRoomEvents = ({ galleryImages }: InRoomEventsProps) => {
   const { lang } = useLanguage();
   const isAr = lang === "ar";
 
@@ -152,9 +156,14 @@ const InRoomEvents = () => {
                 {isAr ? "معرض الصور" : "Photo Gallery"}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="aspect-[4/3] bg-muted/30 rounded-xl border border-border flex items-center justify-center">
-                    <Image className="w-6 h-6 text-muted-foreground/30" />
+                {galleryImages.map((src, i) => (
+                  <div key={src} className="aspect-[4/3] rounded-xl border border-border overflow-hidden bg-muted/20">
+                    <img
+                      src={src}
+                      alt={isAr ? `صورة فعالية ${i + 1}` : `Event photo ${i + 1}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
                 ))}
               </div>

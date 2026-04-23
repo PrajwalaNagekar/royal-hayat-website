@@ -73,8 +73,8 @@ const Header = () => {
   ];
 
   const hospitalitySubLinks = [
-    { label: lang === "ar" ? "القاعات الفاخرة" : "Luxury Halls", href: "/hospitality?section=halls", icon: Star, desc: lang === "ar" ? "قاعات أنيقة للمناسبات" : "Elegant event spaces for celebrations" },
-    { label: lang === "ar" ? "الأجنحة الفاخرة" : "Luxury Suites", href: "/hospitality?section=suites", icon: Bed, desc: lang === "ar" ? "أجنحة فاخرة بمعايير فندقية" : "Luxury hotel-standard suites" },
+    { label: lang === "ar" ? "القاعات الفاخرة" : "Halls", href: "/hospitality?section=halls", icon: Star, desc: lang === "ar" ? "قاعات أنيقة للمناسبات" : "Elegant event spaces for celebrations" },
+    { label: lang === "ar" ? "الأجنحة الفاخرة" : "Suites", href: "/hospitality?section=suites", icon: Bed, desc: lang === "ar" ? "أجنحة فاخرة بمعايير فندقية" : "Luxury hotel-standard suites" },
     { label: lang === "ar" ? "خدمات الفعاليات في الغرف" : "In-Room Event Services", href: "/in-room-events", icon: Sparkles, desc: lang === "ar" ? "ترتيبات فعاليات مخصصة" : "Personalized event arrangements" },
     { label: lang === "ar" ? "سبا إليمنتس" : "Elements Spa", href: "/hospitality?section=spa", icon: Droplets, desc: lang === "ar" ? "خدمات استرخاء وعافية" : "Relaxation and wellness services" },
     { label: lang === "ar" ? "مقهى الليوان" : "Al Liwan Cafe", href: "/hospitality?section=cafe", icon: Coffee, desc: lang === "ar" ? "مأكولات راقية ومرطبات" : "Fine dining and refreshments" },
@@ -376,7 +376,7 @@ const Header = () => {
             </Link>
             <div className="flex-1 flex items-center justify-end">
               <div className="flex flex-col lg:flex-row items-end justify-end gap-y-1 lg:gap-y-0 lg:gap-x-4 font-body text-xs lg:text-sm text-muted-foreground">
-                <a href="tel:+96525360555" className="inline-flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap">
+                <a href="tel:+96525360000" className="inline-flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap">
                   <Phone className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> +965 2536 0000
                 </a>
                 <a href="mailto:info@royalehayat.com" className="inline-flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap">
@@ -509,7 +509,7 @@ const Header = () => {
             </button>
             <Link
               to="/book-appointment"
-              className={`hidden sm:inline-flex bg-primary text-primary-foreground rounded-full font-body tracking-wide hover:bg-primary/90 transition-colors duration-300 ${lang === "ar" ? "px-2.5 py-1 text-[9px]" : "px-3.5 py-1.5 text-[11px]"
+              className={`hidden sm:inline-flex items-center justify-center h-8 md:h-9 bg-primary text-primary-foreground rounded-full font-body tracking-wide hover:bg-primary/90 transition-colors duration-300 ${lang === "ar" ? "px-2.5 text-[9px]" : "px-3.5 text-[11px]"
                 }`}
             >
               {t("bookAppointment")}
@@ -517,7 +517,7 @@ const Header = () => {
 
             <button
               onClick={() => setShowMedRecordsModal(true)}
-              className={`hidden md:inline-flex items-center gap-1.5 rounded-full font-body tracking-wide border border-border text-foreground hover:bg-background transition-colors duration-300 ${lang === "ar" ? "px-2.5 py-1 text-[9px]" : "px-3.5 py-1.5 text-[11px]"
+              className={`hidden md:inline-flex items-center justify-center h-8 md:h-9 rounded-full font-body tracking-wide border border-border text-foreground hover:bg-background transition-colors duration-300 ${lang === "ar" ? "px-2.5 text-[9px]" : "px-3.5 text-[11px]"
                 }`}
             >
               {t("login")}

@@ -139,7 +139,7 @@ const LeaderCard = ({ leader, lang }: { leader: typeof leaders[0] & { image?: st
       <div className="flex flex-col md:flex-row">
         {/* Photo / Avatar side */}
         <div className="md:w-64 flex-shrink-0 bg-primary/5 flex items-center justify-center p-8 md:p-10">
-          <div className="w-44 h-44 md:w-60 md:h-60 rounded-2xl bg-primary/10 flex items-center justify-center border-4 border-primary/20 overflow-hidden">
+          <div className={`w-44 h-44 md:w-60 md:h-60 rounded-2xl flex items-center justify-center border-4 border-primary/20 overflow-hidden ${leader.nameEn === "Shibu Thomas Mathew" ? "bg-white" : "bg-primary/10"}`}>
             {leader.image ? (
               <img
                 src={leader.image}

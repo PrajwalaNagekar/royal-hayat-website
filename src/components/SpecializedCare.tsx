@@ -305,7 +305,7 @@ const SpecializedCare = () => {
                   ease: [0.25, 0.46, 0.45, 0.94],
                   layout: { duration: 0.4, ease: "easeInOut" }
                 }}
-                className={`bg-popover rounded-xl overflow-hidden border border-border/50 cursor-pointer group transition-all duration-500 ${isExpanded ? "sm:col-span-2 lg:col-span-3 shadow-xl z-20" : "hover:border-primary/30 z-10"
+                className={`bg-popover rounded-2xl overflow-hidden border border-border/50 cursor-pointer group transition-all duration-500 ${isExpanded ? "sm:col-span-2 lg:col-span-3 shadow-xl z-20" : "hover:border-primary/30 z-10"
                   }`}
                 onClick={() => !isExpanded && handleExpand(origIdx)}
               >
@@ -321,7 +321,7 @@ const SpecializedCare = () => {
                       {showImageCard ? (
                         /* First 6: Image cards */
                         <>
-                          <div className="relative h-32 md:h-36 overflow-hidden">
+                          <div className="relative h-52 md:h-60 overflow-hidden">
                             <img
                               src={s.img}
                               alt={lang === "ar" ? s.nameAr : s.name}
@@ -370,7 +370,7 @@ const SpecializedCare = () => {
                     >
                       {/* Left: Image + Info */}
                       <div className="lg:w-2/5 relative">
-                        <div className="relative h-48 lg:h-full min-h-[280px] overflow-hidden">
+                        <div className="relative h-72 lg:h-full min-h-[380px] overflow-hidden">
                           <img
                             src={s.img}
                             alt={lang === "ar" ? s.nameAr : s.name}

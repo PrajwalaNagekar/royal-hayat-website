@@ -11,7 +11,12 @@ import { useState } from "react";
 import ReactPannellum from "react-pannellum";
 import { useSearchParams, Link } from "react-router-dom";
 
-const HospitalityServices = () => {
+type HospitalityServicesProps = {
+  gardeniaHallImages: string[];
+  alJouriHallImages: string[];
+};
+
+const HospitalityServices = ({ gardeniaHallImages, alJouriHallImages }: HospitalityServicesProps) => {
   const { lang, t } = useLanguage();
   const isAr = lang === "ar";
   const [searchParams] = useSearchParams();
@@ -189,10 +194,10 @@ const HospitalityServices = () => {
       </section>}
 
       {/* ===== OUR LUXURY HALLS ===== */}
-      {show("halls") && <section className="py-6 bg-primary/5">
+      {show("halls") && <section className="py-6 bg-white">
         <div className="container mx-auto px-6 max-w-6xl">
           <ScrollAnimationWrapper>
-            {showAll && <h2 className="text-2xl md:text-3xl font-serif text-foreground mb-2 text-center">{isAr ? "القاعات الفاخرة" : "Luxury Halls"}</h2>}
+            {showAll && <h2 className="text-2xl md:text-3xl font-serif text-foreground mb-2 text-center">{isAr ? "القاعات الفاخرة" : "Halls"}</h2>}
             <div className={`flex justify-center gap-2 flex-wrap ${showAll ? 'mt-6' : 'mt-2'} mb-10`}>
               {hallsNav.map((h) => (
                 <button key={h.id} onClick={() => setActiveHall(h.id)}
@@ -206,7 +211,20 @@ const HospitalityServices = () => {
           {/* Gardenia */}
           {activeHall === "gardenia" && (
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} key="gardenia">
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {gardeniaHallImages.map((src, index) => (
+                    <div key={src} className="aspect-[4/3] rounded-xl border border-border overflow-hidden bg-muted/20">
+                      <img
+                        src={src}
+                        alt={isAr ? `صورة قاعة غاردينيا ${index + 1}` : `Gardenia Banquet Hall image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+
                 <div>
                   <h3 className="text-xl font-serif text-foreground mb-4">{isAr ? "قاعة غاردينيا" : "Gardenia Banquet Hall"}</h3>
                   <p className="font-body text-sm text-muted-foreground leading-relaxed mb-4">
@@ -242,14 +260,6 @@ const HospitalityServices = () => {
                     <p className="font-body text-sm text-foreground">{isAr ? "للحجز والمزيد من المعلومات، اتصل:" : "For bookings and more information, please call:"} <a href="tel:+96525360573" className="text-accent hover:underline font-semibold">+96525360573</a></p>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
-                    <div className="text-center">
-                      <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                      <p className="font-body text-xs text-muted-foreground">{isAr ? "صور القاعة قريباً" : "Gardenia Banquet Hall images coming soon"}</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </motion.div>
           )}
@@ -257,7 +267,20 @@ const HospitalityServices = () => {
           {/* Al Jouri */}
           {activeHall === "aljouri" && (
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} key="aljouri">
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-4">
+                  {alJouriHallImages.map((src, index) => (
+                    <div key={src} className="aspect-[4/3] rounded-xl border border-border overflow-hidden bg-muted/20">
+                      <img
+                        src={src}
+                        alt={isAr ? `صورة قاعة الجوري ${index + 1}` : `Al Jouri Banquet Hall image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+
                 <div>
                   <h3 className="text-xl font-serif text-foreground mb-4">{isAr ? "قاعة الجوري" : "Al Jouri Banquet Hall"}</h3>
                   <p className="font-body text-sm text-muted-foreground leading-relaxed mb-4">
@@ -277,12 +300,6 @@ const HospitalityServices = () => {
                   <div className="flex items-center gap-2 mt-4">
                     <Phone className="w-4 h-4 text-accent" />
                     <p className="font-body text-sm text-foreground">{isAr ? "للحجز والمزيد من المعلومات، اتصل:" : "For bookings and more information, please call:"} <a href="tel:+96525360573" className="text-accent hover:underline font-semibold">+96525360573</a></p>
-                  </div>
-                </div>
-                <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
-                  <div className="text-center">
-                    <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                    <p className="font-body text-xs text-muted-foreground">{isAr ? "صور القاعة قريباً" : "Al Jouri Banquet Hall images coming soon"}</p>
                   </div>
                 </div>
               </div>
@@ -317,11 +334,13 @@ const HospitalityServices = () => {
                 </>)}
               </div>
             </ScrollAnimationWrapper>
-            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
-              <div className="text-center">
-                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="font-body text-xs text-muted-foreground">{isAr ? "صور المقهى قريباً" : "Al Liwan Café images coming soon"}</p>
-              </div>
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border overflow-hidden">
+              <img
+                src="/images/cafe/cafe.JPG"
+                alt={isAr ? "مقهى الليوان" : "Al Liwan Cafe"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
@@ -331,11 +350,13 @@ const HospitalityServices = () => {
       {section === "spa" && <section className="py-6 bg-primary/5">
         <div className="container mx-auto px-6 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-10 items-start">
-            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center order-2 lg:order-1">
-              <div className="text-center">
-                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="font-body text-xs text-muted-foreground">{isAr ? "صور السبا قريباً" : "Elements Spa images coming soon"}</p>
-              </div>
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border overflow-hidden order-2 lg:order-1">
+              <img
+                src="/images/spa/spa.JPG"
+                alt={isAr ? "سبا إليمنتس" : "Elements Spa"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
             <ScrollAnimationWrapper className="order-1 lg:order-2">
               {showAll && <div className="flex items-center gap-3 mb-4">
@@ -368,43 +389,13 @@ const HospitalityServices = () => {
         </div>
       </section>}
 
-      {/* ===== NEWBORN PHOTOGRAPHY ===== */}
-      {showAll && <section className="py-6">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <ScrollAnimationWrapper>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Baby className="w-6 h-6 text-accent" />
-                </div>
-                <h2 className="text-2xl md:text-3xl font-serif text-foreground">{isAr ? "خدمات تصوير المواليد" : "Newborn Photography Services"}</h2>
-              </div>
-              <h3 className="font-serif text-lg text-foreground mb-4">{isAr ? "التقط أثمن لحظات الحياة" : "Capture Life's Most Precious Moments"}</h3>
-              <div className="space-y-4 font-body text-sm text-muted-foreground leading-relaxed">
-                <p>{isAr
-                  ? "استقبال مولودك الجديد هو من أغلى لحظات الحياة. في مستشفى رويال حياة، نقدم خدمات تصوير احترافية لتوثيق هذه اللحظات الخاصة خلال إقامتك."
-                  : "Welcoming your newborn is one of life's most cherished milestones. At Royale Hayat Hospital, we offer professional photography services to beautifully capture these special moments during your stay."}</p>
-              </div>
-              <div className="flex items-center gap-2 mt-6">
-                <Phone className="w-4 h-4 text-accent" />
-                <p className="font-body text-sm text-foreground">{isAr ? "للاستفسارات والمواعيد، اتصل:" : "For inquiries and appointments, please contact:"} <a href="tel:25360960" className="text-accent hover:underline font-semibold">2536 0960</a></p>
-              </div>
-            </ScrollAnimationWrapper>
-            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
-              <div className="text-center">
-                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="font-body text-xs text-muted-foreground">{isAr ? "معرض الصور قريباً" : "Photography portfolio coming soon"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>}
+
 
       {/* ===== OUR LUXURY SUITES ===== */}
       {show("suites") && <section className="py-6 bg-primary/5">
         <div className="container mx-auto px-6 max-w-6xl">
           <ScrollAnimationWrapper>
-            {showAll && <h2 className="text-2xl md:text-3xl font-serif text-foreground mb-2 text-center">{isAr ? "الأجنحة الفاخرة" : "Luxury Suites"}</h2>}
+            {showAll && <h2 className="text-2xl md:text-3xl font-serif text-foreground mb-2 text-center">{isAr ? "الأجنحة الفاخرة" : "Suites"}</h2>}
             <p className="text-muted-foreground font-body text-sm text-center mb-8 max-w-xl mx-auto">
               {isAr ? "اختر من سبع فئات أجنحة مميزة، كل منها مسمى على اسم زهرة ومصمم لتقديم تجربة فريدة." : "Choose from seven distinctive suite categories, each named after a flower and designed to offer a unique experience."}
             </p>
@@ -584,11 +575,13 @@ const HospitalityServices = () => {
       {showAll && <section className="py-6 bg-primary/5">
         <div className="container mx-auto px-6 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-10 items-start">
-            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center order-2 lg:order-1">
-              <div className="text-center">
-                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="font-body text-xs text-muted-foreground">{isAr ? "صور السبا قريباً" : "Elements Spa images coming soon"}</p>
-              </div>
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border overflow-hidden order-2 lg:order-1">
+              <img
+                src="/images/spa/spa.JPG"
+                alt={isAr ? "سبا إليمنتس" : "Elements Spa"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
             <ScrollAnimationWrapper className="order-1 lg:order-2">
               <div className="flex items-center gap-3 mb-4">
@@ -622,8 +615,8 @@ const HospitalityServices = () => {
       </section>}
 
       {/* ===== AL LIWAN CAFÉ (Show All Order) ===== */}
-      {showAll && <section className="py-6">
-        <div className="container mx-auto px-6 max-w-6xl">
+      {showAll && <section className="py-6 bg-white">
+        <div className="container mx-auto px-6 max-w-6xl ">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <ScrollAnimationWrapper>
               <div className="flex items-center gap-3 mb-4">
@@ -644,16 +637,49 @@ const HospitalityServices = () => {
                 </>)}
               </div>
             </ScrollAnimationWrapper>
-            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
-              <div className="text-center">
-                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="font-body text-xs text-muted-foreground">{isAr ? "صور المقهى قريباً" : "Al Liwan Café images coming soon"}</p>
-              </div>
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border overflow-hidden">
+              <img
+                src="/images/cafe/cafe.JPG"
+                alt={isAr ? "مقهى الليوان" : "Al Liwan Cafe"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
       </section>}
+      {/* ===== NEWBORN PHOTOGRAPHY ===== */}
+      {showAll && <section className="py-6">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
 
+            <div className="aspect-video bg-muted/30 rounded-2xl border border-border flex items-center justify-center">
+              <div className="text-center">
+                <Image className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                <p className="font-body text-xs text-muted-foreground">{isAr ? "معرض الصور قريباً" : "Photography portfolio coming soon"}</p>
+              </div>
+            </div>
+            <ScrollAnimationWrapper>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Baby className="w-6 h-6 text-accent" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-serif text-foreground">{isAr ? "خدمات تصوير المواليد" : "Newborn Photography Services"}</h2>
+              </div>
+              <h3 className="font-serif text-lg text-foreground mb-4">{isAr ? "التقط أثمن لحظات الحياة" : "Capture Life's Most Precious Moments"}</h3>
+              <div className="space-y-4 font-body text-sm text-muted-foreground leading-relaxed">
+                <p>{isAr
+                  ? "استقبال مولودك الجديد هو من أغلى لحظات الحياة. في مستشفى رويال حياة، نقدم خدمات تصوير احترافية لتوثيق هذه اللحظات الخاصة خلال إقامتك."
+                  : "Welcoming your newborn is one of life's most cherished milestones. At Royale Hayat Hospital, we offer professional photography services to beautifully capture these special moments during your stay."}</p>
+              </div>
+              <div className="flex items-center gap-2 mt-6">
+                <Phone className="w-4 h-4 text-accent" />
+                <p className="font-body text-sm text-foreground">{isAr ? "للاستفسارات والمواعيد، اتصل:" : "For inquiries and appointments, please contact:"} <a href="tel:25360960" className="text-accent hover:underline font-semibold">2536 0960</a></p>
+              </div>
+            </ScrollAnimationWrapper>
+          </div>
+        </div>
+      </section>}
       <Footer />
       <ChatButton />
       <ScrollToTop />
