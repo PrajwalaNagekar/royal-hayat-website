@@ -10,9 +10,9 @@ import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Heart, Sparkles, HandHeart, GraduationCap, Globe2, Award,
-  MapPin, Clock, ArrowUpRight,
+  MapPin, Clock, ArrowUpRight, ChevronLeft, ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 
 /* ------------------------------------------------------------------ */
@@ -150,10 +150,16 @@ const WorkWithUs = ({
   const { lang } = useLanguage();
   const isAr = lang === "ar";
   const [activeCategory, setActiveCategory] = useState("View All");
+  const categoriesScrollRef = useRef<HTMLDivElement | null>(null);
   const [searchParams] = useSearchParams();
   const section = searchParams.get("section");
   const showAll = !section;
   const showSection = (s: string) => showAll || section === s;
+  const scrollCategories = (direction: "left" | "right") => {
+    if (!categoriesScrollRef.current) return;
+    const amount = direction === "left" ? -280 : 280;
+    categoriesScrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
+  };
 
   const filtered = activeCategory === "View All"
     ? openPositions
@@ -314,14 +320,62 @@ const WorkWithUs = ({
 
       {/* Recognition & Appreciation gallery */}
       {showSection("culture") && (
-        <LifePhotoCarousel
-          variant="muted"
-          title={isAr ? "التقدير والامتنان" : "Recognition & Appreciation"}
-          subtitle={isAr
-            ? "موظف الشهر، تكريمات الإنجاز، وامتنان يومي — لأن الجهد يستحق أن يُرى."
-            : "Employee of the Month, achievement honors, and everyday gratitude — because effort deserves to be seen."}
-          photos={toCarouselPhotos("Recognition & Appreciation", [])}
-        />
+        <section className="py-16 bg-secondary/10">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-8">
+              <p className="text-accent text-xs tracking-[0.3em] uppercase font-body mb-3">
+                {isAr ? "حياة في رويال حياة" : "Life at Royale Hayat"}
+              </p>
+              <h2 className="text-2xl md:text-3xl font-serif text-foreground">
+                {isAr ? "التقدير والامتنان" : "Recognition & Appreciation"}
+              </h2>
+              <p className="text-muted-foreground font-body text-sm max-w-2xl mx-auto mt-3">
+                {isAr
+                  ? "موظف الشهر، تكريمات الإنجاز، وامتنان يومي — لأن الجهد يستحق أن يُرى."
+                  : "Employee of the Month, achievement honors, and everyday gratitude — because effort deserves to be seen."}
+              </p>
+            </div>
+
+            <div className="max-w-5xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="bg-popover border border-border/50 rounded-2xl overflow-hidden"
+              >
+                <div className="flex flex-col md:flex-row">
+                  <div className="md:w-64 flex-shrink-0 bg-primary/5 flex items-center justify-center p-8 md:p-10">
+                    {/* Placeholder image area intentionally kept blank */}
+                    <div className="w-44 h-44 md:w-60 md:h-60 rounded-2xl border-4 border-primary/20 bg-primary/10" />
+                  </div>
+
+                  <div className="flex-1 p-6 md:p-8">
+                    <h3 className="font-serif text-xl text-foreground mb-1">
+                      {isAr ? "اسم الموظف" : "Employee Name"}
+                    </h3>
+                    <p className="font-body text-xs text-accent mb-2">
+                      {isAr ? "المسمى الوظيفي" : "Title"}
+                    </p>
+                    <p className="font-body text-sm text-accent mb-4">
+                      {isAr ? "الدور" : "Role"}
+                    </p>
+
+                    <div>
+                      <h4 className="font-serif text-base text-foreground mb-2">
+                        {isAr ? "الإنجازات" : "Achievements"}
+                      </h4>
+                      <p className="font-body text-sm text-muted-foreground leading-relaxed">
+                        {isAr
+                          ? "أضف الإنجازات الرئيسية هنا (مثل: موظف الشهر، جائزة التميز، مبادرات تحسين تجربة المريض)."
+                          : "Add key achievements here (e.g., Employee of the Month, Excellence Award, patient-experience initiatives)."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Staff Activities (includes Volley Ball Tournament photos) */}
@@ -393,20 +447,40 @@ const WorkWithUs = ({
             </ScrollAnimationWrapper>
 
             {/* Category filter tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`whitespace-nowrap px-5 py-2 rounded-full text-xs font-body tracking-wide border transition-all ${
-                    activeCategory === cat
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-popover text-foreground border-border hover:border-primary/40"
-                  }`}
-                >
-                  {cat.toUpperCase()}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 mb-8">
+              <button
+                onClick={() => scrollCategories("left")}
+                aria-label={isAr ? "مرر لليسار" : "Slide left"}
+                className="w-10 h-10 rounded-full border border-border bg-popover flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors flex-shrink-0"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div
+                ref={categoriesScrollRef}
+                className="flex items-center gap-2 overflow-x-auto pb-4 -mb-4 scrollbar-hide flex-1"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`whitespace-nowrap px-5 py-2 rounded-full text-xs font-body tracking-wide border transition-all ${
+                      activeCategory === cat
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-popover text-foreground border-border hover:border-primary/40"
+                    }`}
+                  >
+                    {cat.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => scrollCategories("right")}
+                aria-label={isAr ? "مرر لليمين" : "Slide right"}
+                className="w-10 h-10 rounded-full border border-border bg-popover flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors flex-shrink-0"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Job cards */}
