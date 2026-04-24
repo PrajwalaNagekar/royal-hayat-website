@@ -169,13 +169,22 @@ const Doctors = () => {
   const searchResults = searchDoctorsBySymptom(searchQuery);
   const isSearching = searchQuery.trim().length > 0;
   const locale = lang === "ar" ? "ar" : "en";
+  const stripTitlePrefix = (name: string) =>
+    name
+      .replace(/^(dr|prof|professor)\.?\s+/i, "")
+      .trim();
 
   const sortedGroupedEntries = Object.entries(grouped)
     .map(([dept, docs]) => [
       dept,
       [...docs].sort((a, b) =>
-        (lang === "ar" ? a.nameAr : a.name).localeCompare(
-          lang === "ar" ? b.nameAr : b.name,
+        (dept === "Anesthesia"
+          ? stripTitlePrefix(lang === "ar" ? a.nameAr : a.name)
+          : (lang === "ar" ? a.nameAr : a.name)
+        ).localeCompare(
+          dept === "Anesthesia"
+            ? stripTitlePrefix(lang === "ar" ? b.nameAr : b.name)
+            : (lang === "ar" ? b.nameAr : b.name),
           locale
         )
       ),

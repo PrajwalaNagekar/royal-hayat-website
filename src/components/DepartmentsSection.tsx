@@ -8,8 +8,7 @@ import { doctors as allDoctors } from "@/data/doctors";
 import { departments, deptDoctorAliases, type Department } from "@/data/departments";
 import { departmentDetails } from "@/data/departmentDetails";
 import ScrollAnimationWrapper from "./ScrollAnimationWrapper";
-
-
+//test push
 const DepartmentsSection = () => {
   const getDeptDoctors = (deptName: string) => {
     const aliases = deptDoctorAliases[deptName] || [deptName];
