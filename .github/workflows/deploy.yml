@@ -1,4 +1,4 @@
-name: Deploy Website
+name: Deploy Vite App to EC2
 
 on:
   push:
@@ -6,57 +6,38 @@ on:
       - main
 
 jobs:
-  build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: npm install
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
-      - name: Build project
-        run: npm run build
+    - name: Install dependencies
+      run: npm install
 
-      # 🔥 Clean old files
-      - name: Clean old dist on server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            sudo rm -rf /home/ubuntu/royal-hayat-website/dist/*
+    - name: Build project
+      run: npm run build
 
-      # 🚀 Copy new build
-      - name: Copy new build
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          source: "dist/*"
-          target: "/home/ubuntu/royal-hayat-website/dist"
-          overwrite: true
+    - name: Deploy dist to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        source: "dist/*"
+        target: "/home/ubuntu/royal-hayat-website/dist"
 
-      # 🔥 FIX PERMISSIONS (THIS IS WHAT YOU ASKED)
-      - name: Fix permissions on server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            sudo chown -R www-data:www-data /home/ubuntu/royal-hayat-website
-            sudo chmod -R 755 /home/ubuntu/royal-hayat-website
-
-      # 🔄 Restart nginx
-      - name: Restart Nginx
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            sudo systemctl restart nginx
+    - name: Restart Nginx
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          sudo systemctl restart nginx
