@@ -27,7 +27,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            rm -rf /home/ubuntu/royal-hayat-website/dist/*
+            sudo rm -rf /home/ubuntu/royal-hayat-website/dist/*
 
       # 🚀 Copy new build
       - name: Copy new build
