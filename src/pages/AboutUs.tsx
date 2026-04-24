@@ -144,7 +144,7 @@ const LeaderCard = ({ leader, lang }: { leader: typeof leaders[0] & { image?: st
               <img
                 src={leader.image}
                 alt={name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain md:object-cover md:object-top bg-white"
               />
             ) : (
               <span className="text-4xl md:text-5xl font-serif text-primary">{leader.initials}</span>
