@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Clock, Send, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Send, Facebook, Instagram, Youtube } from "lucide-react";
 import logo from "@/assets/rhh-logo-full.png";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -35,18 +35,31 @@ const Footer = () => {
             <p className="text-primary-foreground/70 font-body text-sm leading-relaxed">{t("footerDesc")}</p>
             <div className="flex items-center gap-3">
               {[
-                { key: "facebook", icon: Facebook, href: "#" },
-                { key: "instagram", icon: Instagram, href: "#" },
-                { key: "youtube", icon: Youtube, href: "#" },
-                { key: "x", icon: Twitter, href: "#" },
+                { key: "instagram", icon: Instagram, href: "#", type: "outline" },
+                { key: "facebook", icon: Facebook, href: "#", type: "filled" },
+                { key: "x", href: "#", type: "x" },
+                { key: "youtube", href: "#", type: "youtube" },
               ].map((social) => (
                 <a
                   key={social.key}
                   href={social.href}
-                  className="w-9 h-9 rounded-full border border-primary-foreground/30 flex items-center justify-center text-primary-foreground/70 hover:text-accent hover:border-accent transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-primary-foreground/70 hover:text-accent hover:border-accent transition-colors"
                   aria-label={social.key}
                 >
-                  <social.icon className="w-4 h-4" />
+                  {social.type === "filled" && social.icon ? (
+                    <social.icon className="w-5 h-5" fill="currentColor" />
+                  ) : social.type === "youtube" ? (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.376.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.376-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="currentColor"/>
+                      <path d="M9.545 15.568V8.432L15.818 12L9.545 15.568z" fill="#8b1c4a"/>
+                    </svg>
+                  ) : social.type === "x" ? (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  ) : (
+                    social.icon && <social.icon className="w-5 h-5" />
+                  )}
                 </a>
               ))}
             </div>
@@ -106,13 +119,6 @@ const Footer = () => {
                 <Clock className="w-4 h-4 text-accent flex-shrink-0" />
                 <p className="text-accent text-xs tracking-wider uppercase">{t("emergencyServices247")}</p>
               </div>
-              {/* <div className="flex items-center gap-3 pt-2">
-                <Ambulance className="w-4 h-4 text-accent flex-shrink-0" />
-                <div>
-                  <p className="text-primary-foreground font-medium">{t("callAmbulance")}</p>
-                  <a href="tel:+96525360001" className="text-primary-foreground/70 hover:text-accent transition-colors">+965 2536 0001</a>
-                </div>
-              </div> */}
             </div>
           </div>
         </div>
@@ -125,7 +131,7 @@ const Footer = () => {
             ))}
           </div>
         </div>
-      </div>
+      </div>  
     </footer>
   );
 };

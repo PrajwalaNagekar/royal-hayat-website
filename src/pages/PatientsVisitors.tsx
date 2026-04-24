@@ -620,16 +620,17 @@ const PatientsVisitors = () => {
                   {lang === "ar" ? "في مستشفى رويال حياة، سلامة كل مولود هي أولويتنا القصوى. نستخدم نظام RTLS، وهو نظام مراقبة متطور يعمل في الوقت الفعلي مصمم لتوفير حماية شاملة على مدار الساعة لكل رضيع في رعايتنا." : "At Royale Hayat Hospital, the safety of every newborn is our highest priority. We utilize the RTLS, a sophisticated real-time monitoring system designed to provide comprehensive, 24/7 protection for every infant in our care."}
                 </p>
 
-                {/* Video Placeholder */}
                 <div className="mb-10 rounded-2xl overflow-hidden border border-border/50 bg-muted/30">
-                  <div className="aspect-video flex items-center justify-center bg-muted/50">
-                    <div className="text-center">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                        <Radio className="w-8 h-8 text-primary" />
-                      </div>
-                      <p className="font-serif text-lg text-foreground mb-1">{lang === "ar" ? "فيديو نظام" : "System Video"}</p>
-                      <p className="font-body text-xs text-muted-foreground">{lang === "ar" ? "سيتم إضافة الفيديو قريباً" : "Video coming soon"}</p>
-                    </div>
+                  <div className="aspect-video relative">
+                    <video
+                      src="https://res.cloudinary.com/dqznbmfja/video/upload/v1775822694/RHH_TRACKER_WAVE_F_F_1_m9ojmp.mp4"
+                      playsInline
+                      autoPlay
+                      muted
+                      loop
+                      disablePictureInPicture
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
 
