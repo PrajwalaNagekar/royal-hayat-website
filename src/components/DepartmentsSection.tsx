@@ -10,6 +10,7 @@ import { departmentDetails } from "@/data/departmentDetails";
 import ScrollAnimationWrapper from "./ScrollAnimationWrapper";
 //test push
 //test push 2
+//test
 const DepartmentsSection = () => {
   const getDeptDoctors = (deptName: string) => {
     const aliases = deptDoctorAliases[deptName] || [deptName];
