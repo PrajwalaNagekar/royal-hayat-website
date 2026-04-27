@@ -6,10 +6,14 @@ import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
+import axios from "axios";
+import { postEnquiry } from "../../api/enquiry";
 
 const ContactUs = () => {
   const { lang } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", department: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -24,14 +28,34 @@ const ContactUs = () => {
     if (!form.fullName.trim()) e.fullName = lang === "ar" ? "الاسم مطلوب" : "Full name is required";
     if (!form.email.trim()) e.email = lang === "ar" ? "البريد الإلكتروني مطلوب" : "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = lang === "ar" ? "بريد إلكتروني غير صحيح" : "Enter a valid email";
+    if (!form.phone.trim()) e.phone = lang === "ar" ? "رقم الهاتف مطلوب" : "Phone is required";
     if (!form.message.trim()) e.message = lang === "ar" ? "الرسالة مطلوبة" : "Message is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    setSubmitted(true);
+
+    try {
+      setIsSubmitting(true);
+      await postEnquiry(form);
+      setSubmitted(true);
+      setForm({ fullName: "", email: "", phone: "", department: "", message: "" });
+      toast.success(lang === "ar" ? "تم إرسال رسالتك بنجاح." : "Your message has been sent successfully.");
+    } catch (error) {
+      const backendMessage =
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || error.response?.data?.error || error.message
+          : null;
+
+      toast.error(
+        backendMessage ||
+        (lang === "ar" ? "تعذر إرسال الرسالة. يرجى المحاولة مرة أخرى." : "Failed to send message. Please try again.")
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -191,7 +215,8 @@ const ContactUs = () => {
                       </label>
                       <input type="tel" value={form.phone} onChange={(e) => updateField("phone", e.target.value.replace(/\D/g, ""))}
                         placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                        className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${errors.phone ? "border-destructive" : "border-border"}`} />
+                      {errors.phone && <p className="font-body text-xs text-destructive mt-1">{errors.phone}</p>}
                     </div>
 
                     <div>
@@ -216,10 +241,10 @@ const ContactUs = () => {
                     </div>
                   </div>
 
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSubmit}
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSubmit} disabled={isSubmitting}
                     className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-xl font-body text-sm tracking-widest uppercase hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                     <Send className="w-4 h-4" />
-                    {lang === "ar" ? "إرسال" : "Send"}
+                    {isSubmitting ? (lang === "ar" ? "جارٍ الإرسال..." : "Sending...") : (lang === "ar" ? "إرسال" : "Send")}
                   </motion.button>
                 </>
               )}
