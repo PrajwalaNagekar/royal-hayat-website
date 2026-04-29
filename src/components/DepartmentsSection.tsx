@@ -1,37 +1,112 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, X, Stethoscope, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { doctors as allDoctors } from "@/data/doctors";
-import { departments, deptDoctorAliases, type Department } from "@/data/departments";
+import { departments as staticDepartments, type Department } from "@/data/departments";
 import { departmentDetails } from "@/data/departmentDetails";
 import ScrollAnimationWrapper from "./ScrollAnimationWrapper";
-//test push
-//test push 2
-//test 11
+import {
+  getAllDepartments,
+  getDepartmentById,
+  getDoctorsByDepartment,
+} from "../../api/department";
 const DepartmentsSection = () => {
-  const getDeptDoctors = (deptName: string) => {
-    const aliases = deptDoctorAliases[deptName] || [deptName];
-    const matchedDoctors = allDoctors.filter((doc) =>
-      aliases.some((a) => doc.department.includes(a) || doc.specialty.includes(a))
-    );
+  const mapDoctor = (doctor: any) => {
+    const fullName = doctor?.name || "";
+    const initials = fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part[0]?.toUpperCase() || "")
+      .join("");
 
-    return [...matchedDoctors].sort((a, b) =>
-      (lang === "ar" ? a.nameAr : a.name).localeCompare(
-        lang === "ar" ? b.nameAr : b.name,
-        lang === "ar" ? "ar" : "en"
-      )
-    );
+    return {
+      id: doctor?.id || doctor?._id || crypto.randomUUID(),
+      name: doctor?.name || "",
+      nameAr: doctor?.nameAr || doctor?.name || "",
+      specialty: doctor?.specialty || doctor?.department || "",
+      specialtyAr: doctor?.specialtyAr || doctor?.departmentAr || doctor?.specialty || "",
+      department: doctor?.department || "",
+      departmentAr: doctor?.departmentAr || doctor?.department || "",
+      title: doctor?.title || "",
+      titleAr: doctor?.titleAr || doctor?.title || "",
+      initials: doctor?.initials || initials || "DR",
+      image: doctor?.image,
+    };
   };
+
+  const mergeDepartment = (apiDept: any, index: number): Department => {
+    const name = apiDept?.name || "";
+    const slug = apiDept?.slug || "";
+    const matchedStatic =
+      staticDepartments.find((d) => (slug && d.slug === slug) || d.name.toLowerCase() === name.toLowerCase()) ||
+      staticDepartments.find((d) => d.name.toLowerCase() === name.toLowerCase());
+
+    return {
+      id: index + 1,
+      name: name || matchedStatic?.name || "Department",
+      nameAr: apiDept?.nameAr || matchedStatic?.nameAr || name || "القسم",
+      desc: apiDept?.description || matchedStatic?.desc || "",
+      descAr: apiDept?.descriptionAr || matchedStatic?.descAr || "",
+      img: apiDept?.image || matchedStatic?.img || "",
+      slug: slug || matchedStatic?.slug || (name || "department").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      icon: matchedStatic?.icon || staticDepartments[0].icon,
+      category: apiDept?.category || matchedStatic?.category || "General",
+      subs:
+        (apiDept?.subSpecialties || apiDept?.subspecialties)?.map((s: string) => ({ name: s, nameAr: s })) ||
+        matchedStatic?.subs,
+    };
+  };
+
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [selectedSubByDept, setSelectedSubByDept] = useState<Record<number, string>>({});
+  const [departments, setDepartments] = useState<Department[]>(staticDepartments);
+  const [deptDoctorsMap, setDeptDoctorsMap] = useState<Record<string, ReturnType<typeof mapDoctor>[]>>({});
+  const [departmentIdMap, setDepartmentIdMap] = useState<Record<string, string>>({});
   const doctorScrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
   const { lang, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const loadDepartmentsAndDoctors = async () => {
+      try {
+        const allRes = await getAllDepartments();
+        const apiDepartments = Array.isArray(allRes?.data) ? allRes.data : [];
+        const mergedDepartments = apiDepartments.map((dept: any, index: number) => mergeDepartment(dept, index));
+        const nextDepartmentIdMap = Object.fromEntries(
+          apiDepartments
+            .filter((dept: any) => dept?._id && dept?.name)
+            .map((dept: any) => [dept.name, String(dept._id)])
+        );
+        const nextDepartments = mergedDepartments.length > 0 ? mergedDepartments : staticDepartments;
+        setDepartments(nextDepartments);
+        setDepartmentIdMap(nextDepartmentIdMap);
+
+        const doctorsPairs = await Promise.all(
+          nextDepartments.map(async (dept) => {
+            try {
+              const docsRes = await getDoctorsByDepartment(dept.name);
+              const doctors = Array.isArray(docsRes?.data) ? docsRes.data.map(mapDoctor) : [];
+              return [dept.name, doctors] as const;
+            } catch {
+              return [dept.name, []] as const;
+            }
+          })
+        );
+
+        setDeptDoctorsMap(Object.fromEntries(doctorsPairs));
+      } catch (error) {
+        console.error("Failed to fetch departments data", error);
+        setDepartments(staticDepartments);
+      }
+    };
+
+    loadDepartmentsAndDoctors();
+  }, []);
 
   const filteredDepts = departments.filter(dept => {
     const query = searchQuery.toLowerCase();
@@ -63,7 +138,20 @@ const DepartmentsSection = () => {
     }
   };
 
-  const handleToggle = (index: number) => {
+  const handleToggle = async (index: number) => {
+    const dept = departments[index];
+    const deptId = dept ? departmentIdMap[dept.name] : undefined;
+    if (dept && deptId) {
+      try {
+        const detailsRes = await getDepartmentById(deptId);
+        if (detailsRes?.data) {
+          setDepartments((prev) => prev.map((item, i) => (i === index ? mergeDepartment(detailsRes.data, i) : item)));
+        }
+      } catch {
+        // Best-effort detail fetch on expand; ignore on failure.
+      }
+    }
+
     setOpenIndex(openIndex === index ? null : index);
   };
 
@@ -81,7 +169,16 @@ const DepartmentsSection = () => {
   };
 
   const selectedDept = openIndex !== null ? departments[openIndex] : null;
-  const deptDoctors = selectedDept ? getDeptDoctors(selectedDept.name) : [];
+  const deptDoctors = useMemo(() => {
+    if (!selectedDept) return [];
+    const doctors = deptDoctorsMap[selectedDept.name] || [];
+    return [...doctors].sort((a, b) =>
+      (lang === "ar" ? a.nameAr : a.name).localeCompare(
+        lang === "ar" ? b.nameAr : b.name,
+        lang === "ar" ? "ar" : "en"
+      )
+    );
+  }, [deptDoctorsMap, selectedDept, lang]);
 
   // Reorder: expanded first, rest after
   const reorderedDepts = openIndex !== null

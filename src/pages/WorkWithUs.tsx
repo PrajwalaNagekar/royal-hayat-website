@@ -8,11 +8,12 @@ import type { LifePhoto } from "@/components/LifePhotoCarousel.tsx";
 import VoicesFromOurPeople from "@/components/VoicesFromOurPeople.tsx";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getAllJobs, type JobPosting } from "../../api/job";
 import {
   Heart, Sparkles, HandHeart, GraduationCap, Globe2, Award,
   MapPin, Clock, ArrowUpRight, ChevronLeft, ChevronRight,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 
 /* ------------------------------------------------------------------ */
@@ -124,6 +125,15 @@ const openPositions = [
   },
 ];
 
+type Position = {
+  id: string;
+  title: string;
+  category: string;
+  location: string;
+  type: string;
+  desc: string;
+};
+
 type WorkWithUsProps = {
   staffActivitiesImages: string[];
   galaDinnerImages: string[];
@@ -150,20 +160,65 @@ const WorkWithUs = ({
   const { lang } = useLanguage();
   const isAr = lang === "ar";
   const [activeCategory, setActiveCategory] = useState("View All");
+  const [positions, setPositions] = useState<Position[]>(
+    openPositions.map((p, index) => ({
+      id: String(index),
+      title: p.title,
+      category: p.category,
+      location: p.location,
+      type: p.type,
+      desc: p.desc,
+    }))
+  );
   const categoriesScrollRef = useRef<HTMLDivElement | null>(null);
   const [searchParams] = useSearchParams();
   const section = searchParams.get("section");
   const showAll = !section;
   const showSection = (s: string) => showAll || section === s;
+
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        console.log("getAllJobs----start");
+        const jobs = await getAllJobs();
+        if (!Array.isArray(jobs) || jobs.length === 0) return;
+console.log("jobs----",jobs);
+        const mapped = jobs
+          .map((job: JobPosting, index: number): Position | null => {
+            const title = job.title?.toString().trim();
+            if (!title) return null;
+            return {
+              id: String(job._id || job.id || index),
+              title,
+              category: (job.category?.toString().trim() || "General"),
+              location: (job.location?.toString().trim() || "On-Site"),
+              type: (job.type?.toString().trim() || "Full-Time"),
+              desc: (job.desc?.toString().trim() || job.description?.toString().trim() || ""),
+            };
+          })
+          .filter((job): job is Position => job !== null);
+
+        if (mapped.length > 0) {
+          setPositions(mapped);
+        }
+      } catch (error) {
+        console.error("Failed to fetch jobs", error);
+      }
+    };
+
+    loadJobs();
+  }, []);
   const scrollCategories = (direction: "left" | "right") => {
     if (!categoriesScrollRef.current) return;
     const amount = direction === "left" ? -280 : 280;
     categoriesScrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
   };
 
+  const categories = ["View All", ...Array.from(new Set(positions.map((p) => p.category)))];
+
   const filtered = activeCategory === "View All"
-    ? openPositions
-    : openPositions.filter(p => p.category === activeCategory);
+    ? positions
+    : positions.filter(p => p.category === activeCategory);
 
   /* --- Work Culture / People Promise from the uploaded document --- */
   const beliefPillars = [
@@ -486,7 +541,7 @@ const WorkWithUs = ({
             {/* Job cards */}
             <div className="max-w-5xl mx-auto space-y-5">
               {filtered.map((pos) => {
-                const originalIndex = openPositions.findIndex(p => p.title === pos.title);
+                const originalIndex = positions.findIndex(p => p.id === pos.id);
                 return (
                   <motion.div
                     key={pos.title}
