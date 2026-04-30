@@ -6,7 +6,14 @@ import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getIdentityStatus, startIdentityVerification } from "../../api/identity";
+import {
+  getIdentityStatus,
+  startIdentityVerification,
+  type IdentityRawPayload,
+  type IdentityStatusResponse,
+  type StartIdentityPayload,
+  type StartIdentityResponse
+} from "../../api/identity";
 
 const VerifyNationalId = () => {
   const { lang, t } = useLanguage();
@@ -17,6 +24,66 @@ const VerifyNationalId = () => {
   const [operationId, setOperationId] = useState<string>("");
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [personName, setPersonName] = useState<string>("");
+  const [identityPayload, setIdentityPayload] = useState<Record<string, unknown> | null>(null);
+
+  const extractDisplayName = (payload: StartIdentityResponse | IdentityStatusResponse) => {
+    const source =
+      ("raw" in payload ? payload.raw?.payload || payload.raw : undefined) ||
+      ("identityData" in payload ? payload.identityData?.payload || payload.identityData : undefined);
+    const typedSource = source as IdentityRawPayload | undefined;
+    const nameEn = typedSource?.name?.english || typedSource?.name?.en || "";
+    const nameAr = typedSource?.name?.arabic || typedSource?.name?.ar || "";
+    return (lang === "ar" ? nameAr : nameEn) || "";
+  };
+
+  const extractIdentityPayload = (payload: StartIdentityResponse | IdentityStatusResponse) => {
+    const source =
+      ("raw" in payload ? payload.raw?.payload || payload.raw : undefined) ||
+      ("identityData" in payload ? payload.identityData?.payload || payload.identityData : undefined);
+    return source && typeof source === "object" ? (source as Record<string, unknown>) : null;
+  };
+
+  const renderValue = (value: unknown): string => {
+    if (value === null || value === undefined || value === "") return "null";
+    if (typeof value === "boolean") return value ? "true" : "false";
+    if (typeof value === "number") return String(value);
+    if (typeof value === "string") return value;
+    return "";
+  };
+
+  const renderPayloadRows = (value: unknown, path = "", depth = 0): JSX.Element[] => {
+    if (Array.isArray(value)) {
+      if (!value.length) {
+        return [
+          <div key={`${path}-empty`} className="text-[11px] text-muted-foreground" style={{ paddingInlineStart: depth * 14 }}>
+            {path || "value"}: null
+          </div>
+        ];
+      }
+      return value.flatMap((item, index) => renderPayloadRows(item, `${path}[${index}]`, depth + 1));
+    }
+
+    if (value && typeof value === "object") {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (!entries.length) {
+        return [
+          <div key={`${path}-empty-obj`} className="text-[11px] text-muted-foreground" style={{ paddingInlineStart: depth * 14 }}>
+            {path || "value"}: null
+          </div>
+        ];
+      }
+      return entries.flatMap(([key, nested]) => {
+        const nestedPath = path ? `${path}.${key}` : key;
+        return renderPayloadRows(nested, nestedPath, depth + 1);
+      });
+    }
+
+    return [
+      <div key={`${path}-leaf`} className="text-[11px] text-muted-foreground break-all" style={{ paddingInlineStart: depth * 14 }}>
+        {path || "value"}: {renderValue(value)}
+      </div>
+    ];
+  };
 
   const validate = () => {
     const v = nationalId.trim();
@@ -42,30 +109,36 @@ const VerifyNationalId = () => {
         setError("");
         setIsVerified(null);
         setPersonName("");
+        setIdentityPayload(null);
         setOperationId("");
 
-        const payload: {
-          civilId: string;
-          callbackUrl?: string;
-          serviceName: { ar: string; en: string };
-          reason: { ar: string; en: string };
-        } = {
+        const payload: StartIdentityPayload = {
           civilId: nationalId.trim(),
           serviceName: { ar: "تجربة", en: "Service Test" },
           reason: { ar: "تجربة", en: "test" }
         };
         const startData = await startIdentityVerification(payload);
+        if (startData?.skippedStart === true && startData?.verified === true) {
+          setOperationId("");
+          setIsVerified(true);
+          setPersonName(extractDisplayName(startData));
+          setIdentityPayload(extractIdentityPayload(startData));
+          setPhase("done");
+          return;
+        }
+
         const opId: string | undefined = startData?.operationId;
         if (!opId) throw new Error(lang === "ar" ? "لم يتم استلام operationId" : "Missing operationId");
 
         setOperationId(opId);
         // Callback-first flow: after starting, user can click "Check Status".
         setPhase("idle");
-      } catch (err: any) {
+      } catch (err: unknown) {
         setPhase("failed");
+        const message = err instanceof Error ? err.message : "";
         setError(
-          typeof err?.message === "string"
-            ? err.message
+          message
+            ? message
             : lang === "ar"
               ? "تعذر بدء التحقق. يرجى المحاولة مرة أخرى."
               : "Failed to start verification. Please try again."
@@ -86,6 +159,7 @@ const VerifyNationalId = () => {
         if (statusData?.status === "pending") {
           setIsVerified(null);
           setPersonName("");
+          setIdentityPayload(null);
           setPhase("idle");
           setError(lang === "ar" ? "الحالة ما زالت قيد الانتظار" : "Status is still pending");
           return;
@@ -93,16 +167,21 @@ const VerifyNationalId = () => {
 
         setIsVerified(statusData?.verified === true);
 
-        const nameEn = statusData?.personName?.english || "";
-        const nameAr = statusData?.personName?.arabic || "";
-        setPersonName((lang === "ar" ? nameAr : nameEn) || "");
+        const nameFromStatus = (() => {
+          const nameEn = statusData?.personName?.english || "";
+          const nameAr = statusData?.personName?.arabic || "";
+          return (lang === "ar" ? nameAr : nameEn) || "";
+        })();
+        setPersonName(nameFromStatus || extractDisplayName(statusData));
+        setIdentityPayload(extractIdentityPayload(statusData));
 
         setPhase("done");
-      } catch (err: any) {
+      } catch (err: unknown) {
         setPhase("failed");
+        const message = err instanceof Error ? err.message : "";
         setError(
-          typeof err?.message === "string"
-            ? err.message
+          message
+            ? message
             : lang === "ar"
               ? "تعذر جلب الحالة. يرجى المحاولة مرة أخرى."
               : "Failed to fetch status. Please try again."
@@ -159,25 +238,27 @@ const VerifyNationalId = () => {
               {error && <p className="font-body text-xs text-destructive mt-1">{error}</p>}
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              type="submit"
-              disabled={phase === "starting" || phase === "checking"}
-              className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-body text-sm tracking-widest uppercase hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
-            >
-              {phase === "starting" ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {lang === "ar" ? "جارِ البدء..." : "Starting..."}
-                </>
-              ) : (
-                <>
-                  {lang === "ar" ? "تحقق" : "Verify"}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </motion.button>
+            {!operationId && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                type="submit"
+                disabled={phase === "starting" || phase === "checking"}
+                className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-body text-sm tracking-widest uppercase hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+              >
+                {phase === "starting" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {lang === "ar" ? "جارِ الفحص..." : "Checking..."}
+                  </>
+                ) : (
+                  <>
+                    {lang === "ar" ? "تحقق من الرقم المدني" : "Check National ID"}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </motion.button>
+            )}
 
             {operationId && (
               <motion.button
@@ -239,6 +320,14 @@ const VerifyNationalId = () => {
                   <p className="font-body text-xs text-muted-foreground mt-1">
                     {lang === "ar" ? "الاسم:" : "Name:"} {personName}
                   </p>
+                )}
+                {identityPayload && (
+                  <div className="mt-3 text-left rounded-lg border border-border bg-background/50 p-3 max-h-64 overflow-auto">
+                    <p className="font-body text-xs text-foreground mb-2">
+                      {lang === "ar" ? "بيانات الهوية" : "Identity Data"}
+                    </p>
+                    {renderPayloadRows(identityPayload)}
+                  </div>
                 )}
                 {operationId && (
                   <p className="font-body text-[11px] text-muted-foreground mt-2 break-all">
