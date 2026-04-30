@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
 @font-face {
   font-family: 'Garamond';
   src: url('/fonts/Garamond.ttc') format('truetype-collection');
@@ -8,6 +7,23 @@
   font-display: swap;
 }
 
+@layer base {
+  html[lang="en"] {
+    font-family: system-ui, sans-serif;
+  }
+
+  html[lang="ar"] {
+    font-family: 'Roboto', sans-serif;
+  }
+
+  /* Force Arabic mode to use Roboto stack even when Tailwind font utilities are present */
+  html[lang="ar"] body,
+  html[lang="ar"] .font-body,
+  [dir="rtl"] body,
+  [dir="rtl"] .font-body {
+    font-family: 'Roboto', sans-serif !important;
+  }
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -189,6 +205,22 @@
 
 [dir="rtl"] .text-sm {
   font-size: 0.925rem;
+}
+
+/* Arabic headings should not inherit the global serif heading font */
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4,
+html[lang="ar"] h5,
+html[lang="ar"] h6,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6 {
+  font-family: 'Roboto', sans-serif !important;
 }
 
 /* Prevent RTL from flipping directional icons */

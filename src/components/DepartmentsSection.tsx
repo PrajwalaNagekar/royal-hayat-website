@@ -1,32 +1,18 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, X, Stethoscope, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { doctors as allDoctors } from "@/data/doctors";
-import { departments, deptDoctorAliases, type Department } from "@/data/departments";
+import { departments as staticDepartments, type Department } from "@/data/departments";
+import { doctors, type Doctor } from "@/data/doctors";
+import { deptDoctorAliases } from "@/data/departments";
 import { departmentDetails } from "@/data/departmentDetails";
 import ScrollAnimationWrapper from "./ScrollAnimationWrapper";
-//test push
-//test push 2
-//test 11
 const DepartmentsSection = () => {
-  const getDeptDoctors = (deptName: string) => {
-    const aliases = deptDoctorAliases[deptName] || [deptName];
-    const matchedDoctors = allDoctors.filter((doc) =>
-      aliases.some((a) => doc.department.includes(a) || doc.specialty.includes(a))
-    );
-
-    return [...matchedDoctors].sort((a, b) =>
-      (lang === "ar" ? a.nameAr : a.name).localeCompare(
-        lang === "ar" ? b.nameAr : b.name,
-        lang === "ar" ? "ar" : "en"
-      )
-    );
-  };
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [selectedSubByDept, setSelectedSubByDept] = useState<Record<number, string>>({});
+  const [departments] = useState<Department[]>(staticDepartments);
   const doctorScrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
@@ -81,7 +67,30 @@ const DepartmentsSection = () => {
   };
 
   const selectedDept = openIndex !== null ? departments[openIndex] : null;
-  const deptDoctors = selectedDept ? getDeptDoctors(selectedDept.name) : [];
+  const deptDoctorsMap = useMemo<Record<string, Doctor[]>>(
+    () =>
+      Object.fromEntries(
+        departments.map((dept) => {
+          const aliases = deptDoctorAliases[dept.name];
+          const matchTerms = aliases && aliases.length > 0 ? aliases : [dept.name];
+          const matchedDoctors = doctors.filter((doc) =>
+            matchTerms.some((alias) => doc.department.includes(alias) || doc.specialty.includes(alias))
+          );
+          return [dept.name, matchedDoctors];
+        })
+      ),
+    [departments]
+  );
+  const deptDoctors = useMemo(() => {
+    if (!selectedDept) return [];
+    const departmentDoctors = deptDoctorsMap[selectedDept.name] || [];
+    return [...departmentDoctors].sort((a, b) =>
+      (lang === "ar" ? a.nameAr : a.name).localeCompare(
+        lang === "ar" ? b.nameAr : b.name,
+        lang === "ar" ? "ar" : "en"
+      )
+    );
+  }, [deptDoctorsMap, selectedDept, lang]);
 
   // Reorder: expanded first, rest after
   const reorderedDepts = openIndex !== null

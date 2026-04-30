@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, ChevronLeft, ChevronRight, Stethoscope } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getDoctorsByDepartment, searchDoctorsBySymptom, Doctor } from "@/data/doctors";
+import { doctors, type Doctor } from "@/data/doctors";
 import { Input } from "@/components/ui/input";
 
 const DoctorCard = ({ doc }: { doc: Doctor }) => {
@@ -165,8 +165,35 @@ const DepartmentRow = ({ department, departmentAr, docs }: { department: string;
 const Doctors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { lang, t } = useLanguage();
-  const grouped = getDoctorsByDepartment();
-  const searchResults = searchDoctorsBySymptom(searchQuery);
+  const grouped = useMemo<Record<string, Doctor[]>>(() => {
+    return doctors.reduce<Record<string, Doctor[]>>((acc, doctor) => {
+      const key = doctor.department || "General";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(doctor);
+      return acc;
+    }, {});
+  }, []);
+  const allDoctors = useMemo(() => Object.values(grouped).flat(), [grouped]);
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+
+    return allDoctors.filter((doc) => {
+      const searchableFields = [
+        doc.name,
+        doc.nameAr,
+        doc.specialty,
+        doc.specialtyAr,
+        doc.department,
+        doc.departmentAr,
+        doc.title,
+        doc.titleAr,
+        ...(doc.symptoms || []),
+      ];
+
+      return searchableFields.some((field) => (field || "").toLowerCase().includes(query));
+    });
+  }, [allDoctors, searchQuery]);
   const isSearching = searchQuery.trim().length > 0;
   const locale = lang === "ar" ? "ar" : "en";
   const stripTitlePrefix = (name: string) =>
@@ -175,6 +202,7 @@ const Doctors = () => {
       .trim();
 
   const sortedGroupedEntries = Object.entries(grouped)
+    .filter(([, docs]) => Array.isArray(docs) && docs.length > 0)
     .map(([dept, docs]) => [
       dept,
       [...docs].sort((a, b) =>
@@ -250,7 +278,7 @@ const Doctors = () => {
               <DepartmentRow
                 key={dept}
                 department={dept}
-                departmentAr={docs[0].departmentAr}
+                departmentAr={docs[0]?.departmentAr || dept}
                 docs={docs}
               />
             ))
