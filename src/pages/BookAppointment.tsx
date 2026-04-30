@@ -273,6 +273,15 @@ const BookAppointment = () => {
     }
   };
 
+  const openReturningPatientModal = () => {
+    setNationalId("");
+    setNationalIdError("");
+    setVerifiedPersonName(null);
+    setVerifyOperationId(null);
+    setVerifyStatusMessage("");
+    setShowReturningPatientModal(true);
+  };
+
   const handleCheckApproval = async () => {
     if (!verifyOperationId) return;
     setIsCheckingApproval(true);
@@ -843,7 +852,7 @@ const BookAppointment = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     <motion.button whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        setShowReturningPatientModal(true);
+                        openReturningPatientModal();
                       }}
                       className="bg-popover rounded-2xl p-8 border border-border text-center transition-all hover:border-primary/40">
                       <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -970,7 +979,17 @@ const BookAppointment = () => {
                 )}
 
                 {patientType && (
-                  <button onClick={() => setPatientType(null)} className="mt-4 font-body text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <button
+                    onClick={() => {
+                      setPatientType(null);
+                      setNationalId("");
+                      setNationalIdError("");
+                      setVerifiedPersonName(null);
+                      setVerifyOperationId(null);
+                      setVerifyStatusMessage("");
+                    }}
+                    className="mt-4 font-body text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     ← {t("changeSelection")}
                   </button>
                 )}
@@ -1126,90 +1145,123 @@ const BookAppointment = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-lg rounded-2xl border border-border bg-popover shadow-2xl p-6"
+            className="w-full max-w-xl rounded-3xl border border-border/70 bg-popover shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-serif text-xl text-foreground mb-2">
-              {isAr ? "التحقق من الرقم المدني" : "National ID Verification"}
-            </h3>
-            <p className="font-body text-xs text-muted-foreground mb-4">
-              {isAr ? "أدخل الرقم المدني للتحقق من بيانات المريض المسجل." : "Enter National ID to verify registered patient details."}
-            </p>
+            <div className="px-6 pt-5 pb-4 border-b border-border/60 bg-gradient-to-r from-primary/5 to-accent/5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-body text-[10px] tracking-[0.18em] uppercase text-accent mb-1">
+                    {isAr ? "مريض مسجل" : "Registered Patient"}
+                  </p>
+                  <h3 className="font-serif text-xl text-foreground">
+                    {isAr ? "التحقق من الرقم المدني" : "National ID Verification"}
+                  </h3>
+                  <p className="font-body text-xs text-muted-foreground mt-1">
+                    {isAr
+                      ? "أدخل الرقم المدني لإحضار الاسم ومتابعة الحجز."
+                      : "Enter National ID to fetch name and continue booking."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReturningPatientModal(false)}
+                  className="w-8 h-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-colors"
+                  aria-label={isAr ? "إغلاق" : "Close"}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
 
-            <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-              {isAr ? "الرقم المدني" : "National ID"} <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={nationalId}
-              onChange={(e) => {
-                setNationalId(e.target.value.replace(/\D/g, "").slice(0, 12));
-                setNationalIdError("");
-                setVerifiedPersonName(null);
-              }}
-              placeholder={isAr ? "ادخل 12 رقم" : "Enter 12 digits"}
-              className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${nationalIdError ? "border-destructive" : "border-border"}`}
-            />
-            {nationalIdError && <p className="font-body text-xs text-destructive mt-1">{nationalIdError}</p>}
+            <div className="p-6">
+              <div className="rounded-2xl border border-border/70 bg-background/50 p-4">
+                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                  {isAr ? "الرقم المدني" : "National ID"} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={nationalId}
+                  onChange={(e) => {
+                    setNationalId(e.target.value.replace(/\D/g, "").slice(0, 12));
+                    setNationalIdError("");
+                    setVerifiedPersonName(null);
+                  }}
+                  placeholder={isAr ? "ادخل 12 رقم" : "Enter 12 digits"}
+                  className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${nationalIdError ? "border-destructive" : "border-border"}`}
+                />
+                {nationalIdError && <p className="font-body text-xs text-destructive mt-2">{nationalIdError}</p>}
+              </div>
 
-            <button
-              onClick={handleNationalIdVerify}
-              disabled={isVerifyingNationalId}
-              className="w-full mt-4 bg-primary text-primary-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center"
-            >
-              {isVerifyingNationalId ? (isAr ? "جارِ الفحص..." : "Verifying...") : (isAr ? "تحقق" : "Verify")}
-            </button>
-
-            {verifyOperationId && (
-              <button
-                onClick={handleCheckApproval}
-                disabled={isCheckingApproval || isVerifyingNationalId}
-                className="w-full mt-3 bg-secondary/40 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center"
-              >
-                {isCheckingApproval
-                  ? (isAr ? "جارِ التحقق..." : "Checking...")
-                  : (isAr ? "تحقق من الموافقة" : "Check Approval")}
-              </button>
-            )}
-            {verifyStatusMessage && (
-              <p className="font-body text-xs text-muted-foreground mt-2">{verifyStatusMessage}</p>
-            )}
-
-            {verifiedPersonName && (
-              <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
-                <p className="font-body text-sm text-foreground">
-                  {isAr ? "تم التحقق بنجاح" : "Verified successfully"}
-                </p>
-                <p className="font-body text-xs text-muted-foreground mt-1">
-                  {isAr ? "الحجز باسم" : "Booking for"}{" "}
-                  <span className="text-foreground font-medium">
-                    {isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic)}
-                  </span>
-                </p>
-                <div className="mt-4 flex gap-3">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={handleNationalIdVerify}
+                  disabled={isVerifyingNationalId}
+                  className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center"
+                >
+                  {isVerifyingNationalId ? (isAr ? "جارِ الفحص..." : "Verifying...") : (isAr ? "تحقق" : "Verify")}
+                </button>
+                {verifyOperationId ? (
                   <button
-                    onClick={() => {
-                      const pickedName = isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic);
-                      setPatientName(pickedName);
-                      setPatientType("returning");
-                      setShowReturningPatientModal(false);
-                      setVerifyOperationId(null);
-                      setVerifyStatusMessage("");
-                    }}
-                    className="flex-1 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors inline-flex items-center justify-center text-center"
+                    onClick={handleCheckApproval}
+                    disabled={isCheckingApproval || isVerifyingNationalId}
+                    className="w-full bg-secondary/50 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/70 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center"
                   >
-                    {isAr ? "متابعة" : "Proceed"}
+                    {isCheckingApproval
+                      ? (isAr ? "جارِ التحقق..." : "Checking...")
+                      : (isAr ? "تحقق من الموافقة" : "Check Approval")}
                   </button>
+                ) : (
                   <button
                     onClick={goToInitialBookingScreen}
-                    className="flex-1 bg-secondary/40 text-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
+                    className="w-full bg-secondary/40 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
                   >
                     {isAr ? "إلغاء" : "Cancel"}
                   </button>
-                </div>
+                )}
               </div>
-            )}
+
+              {verifyStatusMessage && (
+                <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
+                  <p className="font-body text-xs text-foreground">{verifyStatusMessage}</p>
+                </div>
+              )}
+
+              {verifiedPersonName && (
+                <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
+                  <p className="font-body text-sm text-foreground">
+                    {isAr ? "تم التحقق بنجاح" : "Verified successfully"}
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground mt-1">
+                    {isAr ? "الحجز باسم" : "Booking for"}{" "}
+                    <span className="text-foreground font-medium">
+                      {isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic)}
+                    </span>
+                  </p>
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={() => {
+                        const pickedName = isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic);
+                        setPatientName(pickedName);
+                        setPatientType("returning");
+                        setShowReturningPatientModal(false);
+                        setVerifyOperationId(null);
+                        setVerifyStatusMessage("");
+                      }}
+                      className="flex-1 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors inline-flex items-center justify-center text-center"
+                    >
+                      {isAr ? "متابعة" : "Proceed"}
+                    </button>
+                    <button
+                      onClick={goToInitialBookingScreen}
+                      className="flex-1 bg-secondary/40 text-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
+                    >
+                      {isAr ? "إلغاء" : "Cancel"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
         </div>
       )}
