@@ -31,7 +31,7 @@ const AppointmentRequest = () => {
   const prefilledDoctor = doctorId ? allDoctors.find(d => d.id === doctorId) : null;
 
   const [form, setForm] = useState({
-    fullName: "", phone: "", countryCode: "+965", age: "", gender: "",
+    fullName: "", phone: "", countryCode: "+965", dateOfBirth: "", gender: "",
     department: "", preferredDate: "", message: ""
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,7 +41,7 @@ const AppointmentRequest = () => {
     if (!form.fullName.trim()) e.fullName = lang === "ar" ? "الاسم مطلوب" : "Full name is required";
     if (!form.phone.trim()) e.phone = lang === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required";
     else if (!/^\d{7,15}$/.test(form.phone.trim())) e.phone = lang === "ar" ? "رقم هاتف غير صحيح" : "Enter a valid phone number";
-    if (!form.age.trim()) e.age = lang === "ar" ? "العمر مطلوب" : "Age is required";
+    if (!form.dateOfBirth) e.dateOfBirth = lang === "ar" ? "تاريخ الميلاد مطلوب" : "Date of birth is required";
     if (!form.gender) e.gender = lang === "ar" ? "الجنس مطلوب" : "Gender is required";
     // department validation removed
     setErrors(e);
@@ -178,16 +178,20 @@ const AppointmentRequest = () => {
               {errors.phone && <p className="font-body text-xs text-destructive mt-1">{errors.phone}</p>}
             </div>
 
-            {/* Age & Gender */}
+            {/* Date of Birth & Gender */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  {t("age")} <span className="text-destructive">*</span>
+                  {lang === "ar" ? "تاريخ الميلاد" : "Date of Birth"} <span className="text-destructive">*</span>
                 </label>
-                <input type="number" min="0" max="150" value={form.age} onChange={(e) => updateField("age", e.target.value)}
-                  placeholder={t("enterAge")}
-                  className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${errors.age ? "border-destructive" : "border-border"}`} />
-                {errors.age && <p className="font-body text-xs text-destructive mt-1">{errors.age}</p>}
+                <input
+                  type="date"
+                  value={form.dateOfBirth}
+                  onChange={(e) => updateField("dateOfBirth", e.target.value)}
+                  max={new Date().toISOString().split("T")[0]}
+                  className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${errors.dateOfBirth ? "border-destructive" : "border-border"}`}
+                />
+                {errors.dateOfBirth && <p className="font-body text-xs text-destructive mt-1">{errors.dateOfBirth}</p>}
               </div>
               <div>
                 <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">

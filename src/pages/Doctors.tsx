@@ -7,9 +7,7 @@ import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getDoctorsByDepartment as fetchDoctorsByDepartment } from "../../api/doctors";
-import { getAllDepartments } from "../../api/department";
-import type { Doctor } from "@/data/doctors";
+import { doctors, type Doctor } from "@/data/doctors";
 import { Input } from "@/components/ui/input";
 
 const DoctorCard = ({ doc }: { doc: Doctor }) => {
@@ -166,8 +164,15 @@ const DepartmentRow = ({ department, departmentAr, docs }: { department: string;
 
 const Doctors = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [grouped, setGrouped] = useState<Record<string, Doctor[]>>({});
   const { lang, t } = useLanguage();
+  const grouped = useMemo<Record<string, Doctor[]>>(() => {
+    return doctors.reduce<Record<string, Doctor[]>>((acc, doctor) => {
+      const key = doctor.department || "General";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(doctor);
+      return acc;
+    }, {});
+  }, []);
   const allDoctors = useMemo(() => Object.values(grouped).flat(), [grouped]);
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -195,66 +200,6 @@ const Doctors = () => {
     name
       .replace(/^(dr|prof|professor)\.?\s+/i, "")
       .trim();
-
-  useEffect(() => {
-    const mapDoctor = (doctor: any): Doctor => {
-      const fullName = doctor.name || "";
-      const initials = fullName
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part: string) => part[0]?.toUpperCase() || "")
-        .join("");
-
-      return {
-        id: doctor.id || doctor._id || crypto.randomUUID(),
-        name: doctor.name || "",
-        nameAr: doctor.nameAr || doctor.name || "",
-        specialty: doctor.specialty || doctor.department || "",
-        specialtyAr: doctor.specialtyAr || doctor.departmentAr || doctor.specialty || "",
-        department: doctor.department || "",
-        departmentAr: doctor.departmentAr || doctor.department || "",
-        title: doctor.title || "",
-        titleAr: doctor.titleAr || doctor.title || "",
-        bio: doctor.bio || "",
-        bioAr: doctor.bioAr || doctor.bio || "",
-        qualifications: Array.isArray(doctor.qualifications) ? doctor.qualifications : [],
-        qualificationsAr: Array.isArray(doctor.qualificationsAr) ? doctor.qualificationsAr : [],
-        expertise: Array.isArray(doctor.expertise) ? doctor.expertise : [],
-        expertiseAr: Array.isArray(doctor.expertiseAr) ? doctor.expertiseAr : [],
-        languages: Array.isArray(doctor.languages) ? doctor.languages : [],
-        languagesAr: Array.isArray(doctor.languagesAr) ? doctor.languagesAr : [],
-        initials: doctor.initials || initials || "DR",
-        color: doctor.color || "bg-primary",
-        symptoms: Array.isArray(doctor.symptoms) ? doctor.symptoms : [],
-        availableOnline: doctor.availableOnline,
-        image: doctor.image,
-        hideBooking: doctor.hideBooking,
-      };
-    };
-
-    const loadDoctors = async () => {
-      try {
-        const departmentRes = await getAllDepartments();
-        const departments: string[] = Array.isArray(departmentRes?.data) ? departmentRes.data : [];
-
-        const doctorResponses = await Promise.all(
-          departments.map(async (department) => {
-            const res = await fetchDoctorsByDepartment(department);
-            const doctors = Array.isArray(res?.data) ? res.data.map(mapDoctor) : [];
-            return [department, doctors] as const;
-          })
-        );
-
-        setGrouped(Object.fromEntries(doctorResponses));
-      } catch (error) {
-        console.error("Failed to load doctors by department", error);
-        setGrouped({});
-      }
-    };
-
-    loadDoctors();
-  }, []);
 
   const sortedGroupedEntries = Object.entries(grouped)
     .filter(([, docs]) => Array.isArray(docs) && docs.length > 0)
