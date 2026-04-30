@@ -78,7 +78,7 @@ const AppointmentRequest = () => {
             <div className="space-y-5">
                 {[
                   { label: t("patient"), value: form.fullName, icon: User },
-                  { label: t("phone number"), value: `${form.countryCode} ${form.phone}`, icon: Phone },
+                  { label: t("phone"), value: `${form.countryCode} ${form.phone}`, icon: Phone },
                   { label: lang === "ar" ? "تاريخ الميلاد" : "Date of Birth", value: formattedDob || (lang === "ar" ? "غير متوفر" : "Not provided"), icon: Calendar },
                   { label: t("gender"), value: genderLabel, icon: User },
                   {
@@ -87,13 +87,13 @@ const AppointmentRequest = () => {
                     icon: ClipboardList
                   },
                 ].map((row) => (
-                  <div key={row.label} className="flex items-start gap-2.5 py-3 border-b border-border last:border-0">
-                    <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <div key={row.label} className="grid grid-cols-[36px_1fr] items-start gap-x-2.5 py-3 border-b border-border last:border-0">
+                    <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
                       <row.icon className="w-4 h-4 text-accent" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-body text-xs text-muted-foreground uppercase tracking-wider">{row.label}</p>
-                      <p className="font-body text-sm text-foreground font-medium whitespace-pre-line break-words">{row.value}</p>
+                    <div className="min-w-0 flex flex-col items-start">
+                      <p className="font-body text-xs text-muted-foreground uppercase tracking-wider leading-4">{row.label}</p>
+                      <p className="font-body text-sm text-foreground font-medium whitespace-pre-line break-words leading-5 mt-0.5">{row.value}</p>
                     </div>
                   </div>
                 ))}
