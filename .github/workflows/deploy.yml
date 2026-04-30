@@ -14,6 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # ⚙️ Create .env from ENV_FILE secret
+      - name: Create environment file
+        run: |
+          printf "%s" "${{ secrets.ENV_FILE }}" > .env
+
       # 📦 Install dependencies
       - name: Install dependencies
         run: npm install
@@ -22,7 +27,7 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # 🔑 Take ownership (fix permission issue)
+      # 🔑 Fix permission
       - name: Fix permissions before deploy
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -32,7 +37,7 @@ jobs:
           script: |
             sudo chown -R ubuntu:ubuntu /home/ubuntu/royal-hayat-website
 
-      # 🧹 Remove old build (clean properly)
+      # 🧹 Remove old build
       - name: Clean old build
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -42,7 +47,7 @@ jobs:
           script: |
             rm -rf /home/ubuntu/royal-hayat-website/dist
 
-      # 🚀 Copy new build (FIXED PATH)
+      # 🚀 Copy new build
       - name: Copy new build
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -52,7 +57,7 @@ jobs:
           source: "dist/*"
           target: "/home/ubuntu/royal-hayat-website/"
 
-      # 🔐 Set correct permissions for nginx
+      # 🔐 Fix permissions for nginx
       - name: Fix permissions for nginx
         uses: appleboy/ssh-action@v1.0.0
         with:
