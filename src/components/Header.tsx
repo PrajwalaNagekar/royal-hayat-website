@@ -76,7 +76,7 @@ const Header = () => {
     { label: lang === "ar" ? "القاعات الفاخرة" : "Halls", href: "/hospitality?section=halls", icon: Star, desc: lang === "ar" ? "قاعات أنيقة للمناسبات" : "Elegant event spaces for celebrations" },
     { label: lang === "ar" ? "الأجنحة الفاخرة" : "Suites", href: "/hospitality?section=suites", icon: Bed, desc: lang === "ar" ? "أجنحة فاخرة بمعايير فندقية" : "Luxury hotel-standard suites" },
     { label: lang === "ar" ? "خدمات الفعاليات في الغرف" : "In-Room Event Services", href: "/in-room-events", icon: Sparkles, desc: lang === "ar" ? "ترتيبات فعاليات مخصصة" : "Personalized event arrangements" },
-    { label: lang === "ar" ? "سبا إليمنتس" : "Elements Spa", href: "/hospitality?section=spa", icon: Droplets, desc: lang === "ar" ? "خدمات استرخاء وعافية" : "Relaxation and wellness services" },
+    { label: lang === "ar" ? "سبا إليمنتس" : "Elements Spa", href: "/hospitality?section=spa", icon: Droplets, desc: lang === "ar" ? "خدمات استرخاء وعافية" : "Relaxation and wellness services." },
     { label: lang === "ar" ? "مقهى الليوان" : "Al Liwan Cafe", href: "/hospitality?section=cafe", icon: Coffee, desc: lang === "ar" ? "مأكولات راقية ومرطبات" : "Fine dining and refreshments" },
   ];
 
