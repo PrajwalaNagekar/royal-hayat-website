@@ -14,9 +14,8 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ChatButton from "@/components/ChatButton";
 import { doctors as allRealDoctors } from "@/data/doctors";
 import { departments, deptDoctorAliases } from "@/data/departments";
-// TEMP: national ID / civil ID modal flow disabled — uncomment when re-enabling identity verification
-// // TEMP: civil ID verification disabled — uncomment when re-enabling
-// import { getIdentityStatus, startIdentityVerification } from "../../api/identity";
+import { getAvailability, getSpecialities, getCareProviders, type Slot } from "../../api/royalhayat";
+import { getIdentityStatus, startIdentityVerification } from "../../api/identity";
 
 
 // All doctors flat for "know your doctor" path - filter out non-bookable doctors
@@ -51,30 +50,130 @@ const BookAppointment = () => {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  // Generate half-hour slots: 9:00–13:00 and 14:00–17:00 (skip 13:00–14:00 lunch)
-  const timeSlots = (() => {
-    const slots: string[] = [];
-    const addSlots = (startH: number, endH: number) => {
-      for (let h = startH; h < endH; h++) {
-        slots.push(`${String(h).padStart(2, "0")}:00`);
-        slots.push(`${String(h).padStart(2, "0")}:30`);
+  // Dynamic Availability State
+  const [specialityCode, setSpecialityCode] = useState<string | null>(null);
+  const [providerCode, setProviderCode] = useState<string | null>(null);
+  const [serviceCode, setServiceCode] = useState<string>("S001"); // Default service code
+  const [fetchedSlots, setFetchedSlots] = useState<Slot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [specialities, setSpecialities] = useState<any[]>([]);
+
+  // Fetch specialities on mount to enable mapping
+  useEffect(() => {
+    const fetchSpecs = async () => {
+      try {
+        const res = await getSpecialities("1"); // Using '1' as default hospital code
+        if (res.success && res.data?.speciality_list) {
+          setSpecialities(res.data.speciality_list);
+        }
+      } catch (err) {
+        console.error("Failed to fetch specialities:", err);
       }
     };
-    addSlots(9, 13);   // 9:00 – 12:30
-    addSlots(14, 17);  // 14:00 – 16:30
-    return slots;
-  })();
+    fetchSpecs();
+  }, []);
+
+  // Map selected department to speciality code
+  useEffect(() => {
+    if (selectedDept && specialities.length > 0) {
+      const dept = departments.find(d => d.id === selectedDept);
+      if (dept) {
+        // Try to find a match in the speciality list from API
+        const match = specialities.find(s => 
+          (s.specialityname || s.speciality_name || "").toLowerCase().includes(dept.name.toLowerCase()) ||
+          dept.name.toLowerCase().includes((s.specialityname || s.speciality_name || "").toLowerCase())
+        );
+        if (match) {
+          setSpecialityCode(match.specialitycode || match.speciality_code);
+        }
+      }
+    }
+  }, [selectedDept, specialities]);
+
+  // Fetch care providers and map selected doctor to provider code
+  useEffect(() => {
+    const fetchProviders = async () => {
+      if (!specialityCode) return;
+      try {
+        const res = await getCareProviders(specialityCode);
+        if (res.success && res.data?.provider_list && selectedDoctor) {
+          const doctorObj = allDoctorsFlat.find(d => d.id === selectedDoctor);
+          if (doctorObj) {
+            const match = res.data.provider_list.find((p: any) => 
+              (p.providername || p.provider_name || "").toLowerCase().includes(doctorObj.name.toLowerCase()) ||
+              doctorObj.name.toLowerCase().includes((p.providername || p.provider_name || "").toLowerCase())
+            );
+            if (match) {
+              setProviderCode(match.providercode || match.provider_code);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch care providers:", err);
+      }
+    };
+    fetchProviders();
+  }, [specialityCode, selectedDoctor]);
+
+  // Fetch availability when all params are ready
+  useEffect(() => {
+    const fetchSlots = async () => {
+      // For testing: Proceed even if specialityCode/providerCode aren't mapped yet, since we use hardcoded values below
+      if (!serviceCode || !selectedDate) {
+        setFetchedSlots([]);
+        return;
+      }
+
+      setIsLoadingSlots(true);
+      try {
+        const res = await getAvailability({
+          specialitycode: "R060COS", // Hardcoded for testing: Cosmetic Center
+          providercode: "PT079",   // Hardcoded for testing: Husain T M AlQattan
+          servicecode: serviceCode,
+          datefrom: selectedDate
+        });
+        if (res.success && res.data?.slot_list) {
+          setFetchedSlots(res.data.slot_list);
+        } else {
+          setFetchedSlots([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch availability:", err);
+        setFetchedSlots([]);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+    fetchSlots();
+  }, [specialityCode, providerCode, serviceCode, selectedDate]);
+
+  const timeSlots = fetchedSlots.map(s => s.start_time);
 
   const formatSlot = (time: string) => {
-    const [h, m] = time.split(":").map(Number);
-    const endM = m + 30;
-    const endH = endM >= 60 ? h + 1 : h;
-    const endMin = endM >= 60 ? endM - 60 : endM;
+    // API returns HH:mm:ss, we want HH:mm AM/PM
+    const [hStr, mStr] = time.split(":");
+    const h = parseInt(hStr);
+    const m = parseInt(mStr);
+    
     const fmt = (hh: number, mm: number) => {
       const suffix = hh < 12 ? "AM" : "PM";
       const hh12 = hh % 12 === 0 ? 12 : hh % 12;
       return `${hh12}:${String(mm).padStart(2, "0")} ${suffix}`;
     };
+    
+    // Find the end time for this slot from the fetchedSlots
+    const slot = fetchedSlots.find(s => s.start_time === time);
+    if (slot && slot.end_time) {
+      const [ehStr, emStr] = slot.end_time.split(":");
+      const eh = parseInt(ehStr);
+      const em = parseInt(emStr);
+      return `${fmt(h, m)} – ${fmt(eh, em)}`;
+    }
+
+    // Fallback to +30 min if end_time is not available
+    const endM = m + 30;
+    const endH = endM >= 60 ? h + 1 : h;
+    const endMin = endM >= 60 ? endM - 60 : endM;
     return `${fmt(h, m)} – ${fmt(endH, endMin)}`;
   };
 
@@ -217,12 +316,37 @@ const BookAppointment = () => {
     setStep((s) => Math.min(s + 1, 4));
   };
 
-  /* TEMP: National ID / Afiyati flow — restore with `api/identity` import above
   const extractVerifiedName = (source: any) => {
+    // 1. Check for personName at the top level (common in status response)
+    if (source?.personName) {
+      return {
+        english: source.personName.english || source.personName.en || "",
+        arabic: source.personName.arabic || source.personName.ar || "",
+      };
+    }
+
+    // 2. Check for name object directly in data
+    if (source?.name) {
+      return {
+        english: source.name.english || source.name.en || "",
+        arabic: source.name.arabic || source.name.ar || "",
+      };
+    }
+
+    // 3. Dig into raw or identityData payloads
     const payload = source?.raw?.payload || source?.raw || source?.identityData?.payload || source?.identityData || {};
+    
+    if (payload?.name) {
+      return {
+        english: payload.name.english || payload.name.en || "",
+        arabic: payload.name.arabic || payload.name.ar || "",
+      };
+    }
+
+    // 4. Fallback to common flat property names
     return {
-      english: payload?.name?.english || payload?.name?.en || "",
-      arabic: payload?.name?.arabic || payload?.name?.ar || "",
+      english: payload?.englishName || payload?.nameEn || payload?.name_en || payload?.en_name || "",
+      arabic: payload?.arabicName || payload?.nameAr || payload?.name_ar || payload?.ar_name || "",
     };
   };
 
@@ -246,7 +370,6 @@ const BookAppointment = () => {
       const names = extractVerifiedName(response);
       const hasName = Boolean(names.english || names.arabic);
       if (response?.verified === true && hasName) {
-        setVerifiedPersonName(names);
         const pickedName = isAr ? (names.arabic || names.english) : (names.english || names.arabic);
         setPatientName(pickedName);
         setPatientType("returning");
@@ -304,7 +427,6 @@ const BookAppointment = () => {
         setNationalIdError(isAr ? "تمت الموافقة ولكن لا يوجد اسم متاح حالياً." : "Approved but no name is available yet.");
         return;
       }
-      setVerifiedPersonName(names);
       const pickedName = isAr ? (names.arabic || names.english) : (names.english || names.arabic);
       setPatientName(pickedName);
       setPatientType("returning");
@@ -320,10 +442,6 @@ const BookAppointment = () => {
       setIsCheckingApproval(false);
     }
   };
-  */
-
-  const handleNationalIdVerify = async () => {};
-  const handleCheckApproval = async () => {};
 
   const goToInitialBookingScreen = () => {
     setShowReturningPatientModal(false);
@@ -873,8 +991,7 @@ const BookAppointment = () => {
                         setPatientErrors({});
                         setPatientName("");
                         setPatientType("returning");
-                        /* Skip "Confirm Patient Details" — go straight to time slots */
-                        setStep(3);
+                        openReturningPatientModal();
                       }}
                       className="bg-popover rounded-2xl p-8 border border-border text-center transition-all hover:border-primary/40">
                       <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -976,7 +1093,7 @@ const BookAppointment = () => {
 
                 {/* COMMENTED OUT: "Confirm Patient Details" for returning patients — card above jumps straight to time slots.
                     Restore by removing the `false &&` guard and removing `setStep(3)` from the registered-patient card onClick. */}
-                {false && patientType === "returning" && (
+                {patientType === "returning" && patientName && (
                   <div className="bg-popover rounded-2xl p-5 sm:p-8 border border-border shadow-sm">
                     <h2 className="text-xl font-serif text-foreground mb-2">
                       {isAr ? "تأكيد بيانات المريض" : "Confirm Patient Details"}
@@ -1075,28 +1192,38 @@ const BookAppointment = () => {
                     ))}
                   </div>
 
-                  {selectedDate && (
+                  {isLoadingSlots && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                        className="w-10 h-10 rounded-full border-2 border-accent/20 border-t-accent mb-4"
+                      />
+                      <p className="font-body text-sm text-muted-foreground">
+                        {isAr ? "جارِ جلب المواعيد المتاحة..." : "Fetching available time slots..."}
+                      </p>
+                    </div>
+                  )}
+
+                  {!isLoadingSlots && selectedDate && timeSlots.length > 0 && (
                     <>
-                      <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-3">{isAr ? "الوقت المتاح" : "Available Times"}</p>
-                      <div className="mb-3">
-                        <p className="font-body text-[10px] text-accent uppercase tracking-widest mb-2">{isAr ? "صباحاً" : "Morning"}</p>
-                        <div className="flex flex-wrap justify-center gap-2 mb-5">
-                          {timeSlots.filter(s => parseInt(s) < 13).map((slot) => (
-                            <button key={slot} onClick={() => { setSelectedSlot(slot); setStep(4); }}
-                              className={`px-4 py-2.5 rounded-xl border font-body text-xs transition-all ${selectedSlot === slot
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background border-border text-foreground hover:border-accent/50"}`}>
-                              {formatSlot(slot)}
-                            </button>
-                          ))}
-                        </div>
-                        <p className="font-body text-[10px] text-accent uppercase tracking-widest mb-2">{isAr ? "مساءً" : "Afternoon"}</p>
-                        <div className="flex flex-wrap justify-center gap-2">
-                          {timeSlots.filter(s => parseInt(s) >= 14).map((slot) => (
-                            <button key={slot} onClick={() => { setSelectedSlot(slot); setStep(4); }}
-                              className={`px-4 py-2.5 rounded-xl border font-body text-xs transition-all ${selectedSlot === slot
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background border-border text-foreground hover:border-accent/50"}`}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                        <h3 className="font-body text-sm font-medium text-foreground">
+                          {isAr ? "الأوقات المتاحة" : "Available Times"}
+                        </h3>
+                      </div>
+                      <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {timeSlots.map((slot) => (
+                            <button
+                              key={slot}
+                              onClick={() => { setSelectedSlot(slot); setStep(4); }}
+                              className={`p-4 rounded-xl border text-sm font-body transition-all text-center ${selectedSlot === slot
+                                ? "bg-primary text-primary-foreground border-primary shadow-md"
+                                : "bg-background border-border hover:border-accent/40 hover:bg-accent/5 text-foreground"
+                                }`}
+                            >
                               {formatSlot(slot)}
                             </button>
                           ))}
@@ -1105,7 +1232,17 @@ const BookAppointment = () => {
                     </>
                   )}
 
-                  {!selectedDate && (
+                  {!isLoadingSlots && selectedDate && timeSlots.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground font-body text-sm bg-muted/20 rounded-2xl border border-dashed border-border">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      {isAr ? "لا توجد مواعيد متاحة لهذا اليوم" : "No available appointments for this date"}
+                      <p className="text-xs mt-1 opacity-70">
+                        {isAr ? "يرجى اختيار تاريخ آخر" : "Please try selecting another date"}
+                      </p>
+                    </div>
+                  )}
+
+                  {!isLoadingSlots && !selectedDate && (
                     <div className="text-center py-8 text-muted-foreground font-body text-sm">
                       <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
                       {isAr ? "اختر تاريخاً لعرض المواعيد المتاحة" : "Select a date to see available time slots"}
@@ -1188,7 +1325,7 @@ const BookAppointment = () => {
           )}
         </div>
       </div>
-      {false /* TEMP: civil ID modal — use `showReturningPatientModal &&` when restoring */ && showReturningPatientModal && (
+      {showReturningPatientModal && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/40 backdrop-blur-sm p-4"
           onClick={() => setShowReturningPatientModal(false)}
@@ -1278,40 +1415,6 @@ const BookAppointment = () => {
                 </div>
               )}
 
-              {verifiedPersonName && (
-                <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
-                  <p className="font-body text-sm text-foreground">
-                    {isAr ? "تم التحقق بنجاح" : "Verified successfully"}
-                  </p>
-                  <p className="font-body text-xs text-muted-foreground mt-1">
-                    {isAr ? "الحجز باسم" : "Booking for"}{" "}
-                    <span className="text-foreground font-medium">
-                      {isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic)}
-                    </span>
-                  </p>
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() => {
-                        const pickedName = isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic);
-                        setPatientName(pickedName);
-                        setPatientType("returning");
-                        setShowReturningPatientModal(false);
-                        setVerifyOperationId(null);
-                        setVerifyStatusMessage("");
-                      }}
-                      className="flex-1 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors inline-flex items-center justify-center text-center"
-                    >
-                      {isAr ? "متابعة" : "Proceed"}
-                    </button>
-                    <button
-                      onClick={goToInitialBookingScreen}
-                      className="flex-1 bg-secondary/40 text-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
-                    >
-                      {isAr ? "إلغاء" : "Cancel"}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
         </div>
