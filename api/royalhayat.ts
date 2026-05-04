@@ -27,6 +27,11 @@ export interface AvailabilityResponse {
   };
 }
 
+export interface BookAppointmentPayload {
+  patientId: string;
+  slotBookingId: string;
+}
+
 export const getAvailability = async (params: AvailabilityParams): Promise<AvailabilityResponse> => {
   const response = await api.get("/api/v1/royal-hayat/availability", { params });
   return response.data;
@@ -43,5 +48,15 @@ export const getCareProviders = async (specialityCode: string) => {
   const response = await api.get("/api/v1/royal-hayat/care-providers", {
     params: { specialityCode }
   });
+  return response.data;
+};
+
+export const bookAppointment = async (payload: BookAppointmentPayload) => {
+  const response = await api.post("/api/v1/royal-hayat/book", payload);
+  return response.data;
+};
+
+export const getPatient = async (params: { nationalid: string }) => {
+  const response = await api.get("/api/v1/royal-hayat/patient", { params });
   return response.data;
 };

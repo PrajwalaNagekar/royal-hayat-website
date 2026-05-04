@@ -5,7 +5,7 @@ import {
   Brain, Sparkles, Stethoscope, Building2, User, CheckCircle2,
   Search, ArrowRight, ArrowLeft, Clock,
   Activity, Heart, Baby, Eye, Bone, Pill, Microscope, Scissors, Smile,
-  AlertCircle, FileText, ClipboardList, UserPlus, LogIn, Calendar, Shield
+  AlertCircle, FileText, ClipboardList, UserPlus, LogIn, Calendar, Shield, Loader2
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
@@ -55,8 +55,10 @@ const BookAppointment = () => {
   const [providerCode, setProviderCode] = useState<string | null>(null);
   const [serviceCode, setServiceCode] = useState<string>("S001"); // Default service code
   const [fetchedSlots, setFetchedSlots] = useState<Slot[]>([]);
-  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  const [specialities, setSpecialities] = useState<any[]>([]);
+  const [patientId, setPatientId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   // Fetch specialities on mount to enable mapping
   useEffect(() => {
@@ -331,12 +333,54 @@ const BookAppointment = () => {
     }
   };
 
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setBookingError(null);
+    try {
+      if (patientType === "returning" && patientId && selectedSlotId) {
+        // Real Booking Flow
+        const res = await bookAppointment({
+          patientId: patientId,
+          slotBookingId: selectedSlotId
+        });
+        if (res.success) {
+          setBooked(true);
+          return;
+        }
+      }
+
+      // Fallback or New Patient Flow: Post Enquiry
+      const enquiryPayload = {
+        fullName: patientName,
+        email: "guest@royalhayat.com", // Placeholder if not provided
+        phone: patientPhone || nationalId || "",
+        department: selectedDeptObj?.name || selectedDoctorObj?.specialty || "Appointment Request",
+        message: `Appointment requested for ${selectedDate} at ${selectedSlot}. Patient Type: ${patientType}. Doctor: ${selectedDoctorObj?.name}.`
+      };
+      
+      const enqRes = await postEnquiry(enquiryPayload);
+      if (enqRes.success) {
+        setBooked(true);
+      } else {
+        throw new Error(isAr ? "فشل إرسال الطلب" : "Failed to submit request");
+      }
+    } catch (err: any) {
+      console.error("Booking failed:", err);
+      setBookingError(err.message || (isAr ? "حدث خطأ أثناء معالجة طلبك" : "An error occurred while processing your request"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleNext = () => {
     if (step === 2) {
       if (patientType === "new" && !validatePatientDetails()) return;
       if (!patientType) return;
     }
-    if (step === 4) { setBooked(true); return; }
+    if (step === 4) { 
+      handleConfirm();
+      return; 
+    }
     setStep((s) => Math.min(s + 1, 4));
   };
 
@@ -397,6 +441,17 @@ const BookAppointment = () => {
         const pickedName = isAr ? (names.arabic || names.english) : (names.english || names.arabic);
         setPatientName(pickedName);
         setPatientType("returning");
+        
+        // Fetch Royal Hayat Patient ID
+        try {
+          const pRes = await getPatient({ nationalid: civilId });
+          if (pRes.success && pRes.data?.patient?.patient_id) {
+            setPatientId(pRes.data.patient.patient_id);
+          }
+        } catch (err) {
+          console.error("Failed to fetch patient data:", err);
+        }
+
         setShowReturningPatientModal(false);
         return;
       }
@@ -454,6 +509,17 @@ const BookAppointment = () => {
       const pickedName = isAr ? (names.arabic || names.english) : (names.english || names.arabic);
       setPatientName(pickedName);
       setPatientType("returning");
+
+      // Fetch Royal Hayat Patient ID
+      try {
+        const pRes = await getPatient({ nationalid: nationalId });
+        if (pRes.success && pRes.data?.patient?.patient_id) {
+          setPatientId(pRes.data.patient.patient_id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch patient data:", err);
+      }
+
       setShowReturningPatientModal(false);
       setVerifyOperationId(null);
       setVerifyStatusMessage("");
@@ -1242,7 +1308,11 @@ const BookAppointment = () => {
                             {fetchedSlots.map((slot) => (
                               <button
                                 key={slot.slot_booking_id || slot.slot_from_time}
-                                onClick={() => { setSelectedSlot(slot.slot_from_time); setStep(4); }}
+                                onClick={() => { 
+                                  setSelectedSlot(slot.slot_from_time); 
+                                  setSelectedSlotId(slot.slot_booking_id);
+                                  setStep(4); 
+                                }}
                                 className={`p-4 rounded-xl border text-sm font-body transition-all text-center ${selectedSlot === slot.slot_from_time
                                   ? "bg-primary text-primary-foreground border-primary shadow-md"
                                   : "bg-background border-border hover:border-accent/40 hover:bg-accent/5 text-foreground"
@@ -1315,6 +1385,32 @@ const BookAppointment = () => {
                         </div>
                       </div>
                     ))}
+                  {bookingError && (
+                    <div className="mt-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-destructive" />
+                      <p className="font-body text-sm text-destructive">{bookingError}</p>
+                    </div>
+                  )}
+
+                  <div className="mt-8 flex flex-col gap-4">
+                    <motion.button
+                      whileHover={!isSubmitting ? { scale: 1.02 } : {}}
+                      whileTap={!isSubmitting ? { scale: 0.98 } : {}}
+                      onClick={handleConfirm}
+                      disabled={isSubmitting}
+                      className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-body text-sm tracking-widest uppercase hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          {isAr ? "جارِ الإرسال..." : "Submitting..."}
+                        </>
+                      ) : (
+                        <>
+                          {isRequestMode ? t("submitRequest") : t("confirmBooking")}
+                        </>
+                      )}
+                    </motion.button>
                   </div>
                 </div>
               </div>
@@ -1330,7 +1426,7 @@ const BookAppointment = () => {
             <ArrowLeft className="w-4 h-4" />
             {step === 0 ? t("backToHome") : t("previous")}
           </motion.button>
-          {step >= 2 && !(step === 2 && !patientType) && !(step === 2 && patientType === "returning") && step !== 3 && (
+          {step >= 2 && !(step === 2 && !patientType) && !(step === 2 && patientType === "returning") && step !== 3 && step !== 4 && (
             <motion.button
               whileHover={canProceed() ? { scale: 1.03 } : {}}
               whileTap={canProceed() ? { scale: 0.97 } : {}}
