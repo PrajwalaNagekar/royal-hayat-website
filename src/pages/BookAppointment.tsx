@@ -1385,6 +1385,7 @@ const BookAppointment = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
                   {bookingError && (
                     <div className="mt-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3">
                       <AlertCircle className="w-5 h-5 text-destructive" />
