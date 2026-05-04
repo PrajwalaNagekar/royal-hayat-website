@@ -14,8 +14,9 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ChatButton from "@/components/ChatButton";
 import { doctors as allRealDoctors } from "@/data/doctors";
 import { departments, deptDoctorAliases } from "@/data/departments";
-import { getAvailability, getSpecialities, getCareProviders, type Slot } from "../../api/royalhayat";
+import { getAvailability, getSpecialities, getCareProviders, bookAppointment, getPatient, type Slot } from "../../api/royalhayat";
 import { getIdentityStatus, startIdentityVerification } from "../../api/identity";
+import { postEnquiry } from "../../api/enquiry";
 
 
 // All doctors flat for "know your doctor" path - filter out non-bookable doctors
