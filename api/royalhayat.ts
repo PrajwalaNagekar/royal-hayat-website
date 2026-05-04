@@ -28,19 +28,19 @@ export interface AvailabilityResponse {
 }
 
 export const getAvailability = async (params: AvailabilityParams): Promise<AvailabilityResponse> => {
-  const response = await api.get("/api/v1/royalhayat/availability", { params });
+  const response = await api.get("/api/v1/royal-hayat/availability", { params });
   return response.data;
 };
 
 export const getSpecialities = async (hospitalCode: string) => {
-  const response = await api.get("/api/v1/royalhayat/specialities", {
+  const response = await api.get("/api/v1/royal-hayat/specialities", {
     params: { hospitalCode }
   });
   return response.data;
 };
 
 export const getCareProviders = async (specialityCode: string) => {
-  const response = await api.get("/api/v1/royalhayat/care-providers", {
+  const response = await api.get("/api/v1/royal-hayat/care-providers", {
     params: { specialityCode }
   });
   return response.data;
