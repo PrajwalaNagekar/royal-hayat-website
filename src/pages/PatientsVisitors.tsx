@@ -382,64 +382,38 @@ const PatientsVisitors = () => {
             {show("rooms-package") && <div id="section-rooms-package" className={tab === "rooms-package" ? "flex-1 flex flex-col" : `${sectionClass} border border-border/50 rounded-2xl overflow-hidden bg-popover shadow-sm`}>
               <ScrollAnimationWrapper className={tab === "rooms-package" ? "flex-1 flex flex-col" : ""}>
                 {tab === "rooms-package" ? (
-                  /* Dedicated Tab View */
-                  <div className="flex-1 flex flex-col space-y-0">
-                    {/* Mobile: card with text + download button, no iframe */}
-                    <div className="md:hidden bg-popover border border-border/50 rounded-2xl p-8 text-center shadow-sm">
-                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <Bed className="w-7 h-7 text-primary" />
-                      </div>
-                      <h3 className="font-serif text-xl text-foreground mb-2">
-                        {lang === "ar" ? "باقات الغرف" : "Rooms Package"}
-                      </h3>
-                      <p className="font-body text-sm text-muted-foreground leading-relaxed mb-6">
-                        {lang === "ar"
-                          ? "يوفر مستشفى رويال حياة مجموعة من الأجنحة الفاخرة. قم بتنزيل ملف PDF لعرض جميع التفاصيل والباقات."
-                          : "Royale Hayat Hospital offers a range of luxurious suites. Download the PDF to view all details and packages."}
-                      </p>
-                      <a
-                        href={lang === "ar" ? roomsPdfAr : roomsPdfEn}
-                        download
-                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-7 py-3 rounded-full font-body text-xs tracking-[0.2em] uppercase hover:bg-primary/90 transition-colors shadow-md"
-                      >
-                        <Download className="w-4 h-4" />
-                        {lang === "ar" ? "تحميل PDF" : "Download PDF"}
-                      </a>
+                  /* Dedicated Tab View — images stacked one by one */
+                  <div className="w-full">
+                    {/* Desktop (md+): PC version images */}
+                    <div className="hidden md:block w-full space-y-6 px-6 py-6 bg-background">
+                      {(lang === "ar"
+                        ? [1,2,3,4,5,6].map(n => `/images/Birthing-packages/Birthing Packages for_PC Version_AR jpg/Birthing Packages for_PC Version_AR_${n}.jpg`)
+                        : [1,2,3,4,5,6,7].map(n => `/images/Birthing-packages/Birthing Packages for_PC Version_Eng jpg/Birthing Packages for_PC Version_Eng_${n}.jpg`)
+                      ).map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={lang === "ar" ? `باقات الغرف ${i + 1}` : `Birthing Suites Package ${i + 1}`}
+                          className="w-full block rounded-2xl shadow-sm"
+                          loading={i === 0 ? "eager" : "lazy"}
+                        />
+                      ))}
                     </div>
 
-                    {/* Desktop: PDF viewer without scrollbar - natural height */}
-                    <div className="hidden md:block w-full bg-white rounded-2xl border border-border/30 overflow-hidden">
-                      <div className="overflow-hidden">
-                        {lang === "ar" ? (
-                          roomsPdfAr ? (
-                            <iframe
-                              src={`${roomsPdfAr}#toolbar=0&navpanes=0&scrollbar=0`}
-                              title="Rooms Package Arabic"
-                              className="w-full"
-                              style={{ border: "none", height: "auto", minHeight: "800px" }}
-                              scrolling="no"
-                            />
-                          ) : (
-                            <div className="py-20 text-center text-muted-foreground font-body">
-                              {lang === "ar" ? "ملف PDF العربي غير متوفر" : "Arabic PDF file not available"}
-                            </div>
-                          )
-                        ) : (
-                          roomsPdfEn ? (
-                            <iframe
-                              src={`${roomsPdfEn}#toolbar=0&navpanes=0&scrollbar=0`}
-                              title="Rooms Package English"
-                              className="w-full"
-                              style={{ border: "none", height: "auto", minHeight: "800px" }}
-                              scrolling="no"
-                            />
-                          ) : (
-                            <div className="py-20 text-center text-muted-foreground font-body">
-                              English PDF file not available
-                            </div>
-                          )
-                        )}
-                      </div>
+                    {/* Mobile (< md): Mobile version images */}
+                    <div className="md:hidden w-full">
+                      {(lang === "ar"
+                        ? [1,2,3,4,5,6,7].map(n => `/images/Birthing-packages/Birthing Packages for_Mobile Version_AR JPG/Birthing Packages for_Mobile Version_AR_${n}.jpg`)
+                        : [1,2,3,4,5,6,7].map(n => `/images/Birthing-packages/Birthing Packages for_Mobile Version_Eng jpg/Birthing Packages for_Mobile Version_Eng_${n}.jpg`)
+                      ).map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={lang === "ar" ? `باقات الغرف ${i + 1}` : `Birthing Suites Package ${i + 1}`}
+                          className="w-full block"
+                          loading={i === 0 ? "eager" : "lazy"}
+                        />
+                      ))}
                     </div>
                   </div>
                 ) : (
