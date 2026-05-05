@@ -95,6 +95,7 @@ export function mapApiDoctorRowToDoctor(
     availableOnline: row.availableOnline === true,
     hideBooking: !isActive,
     ...(departmentId ? { departmentId } : {}),
+    providerCode: typeof row.doctorId === "string" ? row.doctorId : undefined,
   };
 }
 

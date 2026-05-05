@@ -155,7 +155,7 @@ const translations: Translations = {
   everyStage: { en: "Every Stage.", ar: "كل مرحلة." },
   everyAge: { en: "Every Age.", ar: "كل عمر." },
   heroIntro: { en: "At life's most meaningful moments, healthcare should feel deeply human.", ar: "في أكثر لحظات الحياة أهمية، يجب أن تكون الرعاية الصحية إنسانية بعمق." },
-  heroDesc: { en: "Since 2006, Royale Hayat Hospital has been celebrating life — beginning as a dedicated women's and children's hospital and growing into Kuwait's leading multi‑disciplinary healthcare destination. From birth to lifelong wellness, we deliver world‑class medical expertise with compassion, privacy, and comfort at the core.", ar: "منذ عام 2006، يحتفي مستشفى رويال حياة بالحياة — بدءاً كمستشفى مخصص للنساء والأطفال ونمواً ليصبح الوجهة الرائدة للرعاية الصحية متعددة التخصصات في الكويت. من الولادة إلى العافية مدى الحياة، نقدم خبرة طبية عالمية المستوى بالرحمة والخصوصية والراحة في جوهرها." },
+  heroDesc: { en: "In 2006, a different vision took shape. We set out to create a healthcare destination where patients would feel cared for in every sense, from the very first step inside to the moment they returned home. A space where healing would be serene, and every interaction would be attentive and respectful.\n\nThis vision became Royale Hayat Hospital.", ar: "في عام 2006، تشكّلت رؤية مختلفة. انطلقنا لنبني وجهة رعاية صحية يشعر فيها المريض بالاهتمام في كل جانب، من أول خطوة داخل المستشفى حتى لحظة عودته إلى المنزل. مكان يكون فيه الشفاء هادئاً، وكل تفاعل منتبهاً ومحترماً.\n\nهذه الرؤية أصبحت مستشفى رويال حياة." },
   heroTagline: { en: "A hospital experience unlike any other.", ar: "تجربة مستشفى لا مثيل لها." },
   bookAnAppointment: { en: "Book an Appointment", ar: "احجز موعداً" },
   exploreServices: { en: "Explore Services", ar: "استكشف الخدمات" },
@@ -206,7 +206,7 @@ const translations: Translations = {
   available: { en: "Available", ar: "متاح" },
   currentlyUnavailable: { en: "Currently Unavailable", ar: "غير متاح حالياً" },
   clickToRequest: { en: "Click to request an appointment (6-12 hr response)", ar: "انقر لطلب موعد (الرد خلال 6-12 ساعة)" },
-  registeredPatient: { en: "Registered Royale Hayat Patient", ar: "مريض مسجل في رويال حياة" },
+  registeredPatient: { en: "Registered at Royal Hayat", ar: "مريض مسجل في رويال حياة" },
   alreadyAccount: { en: "Already have an account? Log in to continue.", ar: "لديك حساب؟ سجل دخولك للمتابعة." },
   firstTimeVisitor: { en: "First-Time Visitor", ar: "زائر لأول مرة" },
   newToRoyale: { en: "New to Royale Hayat? Fill in your details.", ar: "جديد في رويال حياة؟ أدخل بياناتك." },
@@ -298,7 +298,7 @@ const translations: Translations = {
   patientSatisfaction: { en: "Patient Satisfaction", ar: "رضا المرضى" },
 
   // Stats
-  yearsOfExcellence: { en: "Years of Excellence", ar: "سنوات من التميز" },
+  yearsOfExcellence: { en: "/* Years of Excellence */", ar: "سنوات من التميز" },
   specialistDoctors: { en: "Healthcare Professionals", ar: "متخصصون في الرعاية الصحية" },
   departmentsLabel: { en: "Departments", ar: "الأقسام" },
 

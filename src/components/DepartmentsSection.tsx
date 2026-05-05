@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { motion, useInView } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { departments as staticDepartments, type Department } from "@/data/departments";
+import { departments as staticDepartments, type Department, MAIN_CATEGORIES } from "@/data/departments";
 import { doctors, type Doctor } from "@/data/doctors";
 import { deptDoctorAliases } from "@/data/departments";
 import type {
@@ -121,9 +121,122 @@ const DepartmentsSection = ({
     if (disableStaticFallback) return [];
     return staticDepartments.filter((dept) => dept.name !== "Allergy & Immunology");
   }, [apiCatalog, apiGroupedCatalog, useGroupedLayout, disableStaticFallback]);
+import type {
+  DepartmentWithEmbeddedDoctors,
+  MedicalCategoryGroup,
+} from "@/utils/mapMedicalCatalogFromApi";
+import { getSubSlugForDepartment } from "@/utils/departmentSubSlug";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getDoctorsBySubspeciality, mapApiDoctorRowToDoctor } from "@/api/doctors";
+
+export type FetchDoctorsBySubspecialityFn = (
+  subspecialityId: string,
+  opts?: { page?: number; limit?: number },
+) => Promise<Record<string, unknown>[]>;
+
+export type DepartmentsSectionProps = {
+  /** Flat list from API; ignored when `apiGroupedCatalog` is set. */
+  apiCatalog?: DepartmentWithEmbeddedDoctors[] | null;
+  /** When set, each category is a subheading with only its departments underneath. */
+  apiGroupedCatalog?: MedicalCategoryGroup[] | null;
+  apiCatalogLoading?: boolean;
+  /** When true, never fall back to built-in static departments (use with Medical Services API). */
+  disableStaticFallback?: boolean;
+  /** When true, show a load failure message instead of an empty catalog (requires `disableStaticFallback`). */
+  catalogFetchFailed?: boolean;
+  /** When using `apiGroupedCatalog`, show a compact doctor strip on each collapsed department card. */
+  showDepartmentDoctorsOnCards?: boolean;
+  /**
+   * Loads doctors for a subspeciality pill (defaults to `getDoctorsBySubspeciality` from `@/api/doctors`).
+   * Pass from pages so Medical Services / Departments explicitly use that API.
+   */
+  fetchDoctorsBySubspeciality?: FetchDoctorsBySubspecialityFn;
+};
+
+const DepartmentsSection = ({
+  apiCatalog,
+  apiGroupedCatalog,
+  apiCatalogLoading = false,
+  disableStaticFallback = false,
+  catalogFetchFailed = false,
+  showDepartmentDoctorsOnCards = false,
+  fetchDoctorsBySubspeciality = getDoctorsBySubspeciality,
+}: DepartmentsSectionProps = {}) => {
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [selectedSubByDept, setSelectedSubByDept] = useState<Record<string, string>>({});
+  /** When set for a department slug, carousel shows doctors from GET /doctors/subspeciality/:id */
+  const [subDoctorsByDept, setSubDoctorsByDept] = useState<Record<string, Doctor[]>>({});
+  const [subDoctorsLoadingByDept, setSubDoctorsLoadingByDept] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (openSlug === null) {
+      setSubDoctorsByDept({});
+      setSubDoctorsLoadingByDept({});
+    }
+  }, [openSlug]);
+
+  const rowDepartmentMongoId = (row: Record<string, unknown>): string => {
+    const d = row.department;
+    if (d && typeof d === "object" && "_id" in d) {
+      return String((d as { _id: unknown })._id);
+    }
+    return String(d ?? "");
+  };
+
+  const fetchDoctorsForSubspeciality = useCallback(async (dept: Department, subspecialityId: string) => {
+    const slug = dept.slug;
+    const withApi = dept as DepartmentWithEmbeddedDoctors;
+    const deptMongoId = withApi.apiDepartmentId?.trim() || "";
+    setSubDoctorsLoadingByDept((p) => ({ ...p, [slug]: true }));
+    try {
+      const rows = await fetchDoctorsBySubspeciality(subspecialityId, { limit: 100 });
+      const scoped =
+        deptMongoId !== ""
+          ? rows.filter((row) => rowDepartmentMongoId(row as Record<string, unknown>) === deptMongoId)
+          : rows;
+      const mapped = scoped.map((row) =>
+        mapApiDoctorRowToDoctor(row, dept.name, dept.nameAr),
+      );
+      setSubDoctorsByDept((p) => ({ ...p, [slug]: mapped }));
+    } catch {
+      setSubDoctorsByDept((p) => ({ ...p, [slug]: [] }));
+    } finally {
+      setSubDoctorsLoadingByDept((p) => ({ ...p, [slug]: false }));
+    }
+  }, [fetchDoctorsBySubspeciality]);
+
+  const selectSubspecialityPill = useCallback(
+    (dept: Department, sub: { name: string; nameAr: string; subspecialityId?: string }) => {
+      const subSlug = getSubSlugForDepartment(dept.slug, sub.name);
+      setSelectedSubByDept((prev) => ({ ...prev, [dept.slug]: subSlug }));
+      if (sub.subspecialityId) {
+        void fetchDoctorsForSubspeciality(dept, sub.subspecialityId);
+      } else {
+        setSubDoctorsByDept((p) => {
+          const next = { ...p };
+          delete next[dept.slug];
+          return next;
+        });
+        setSubDoctorsLoadingByDept((p) => {
+          const next = { ...p };
+          delete next[dept.slug];
+          return next;
+        });
+      }
+    },
+    [fetchDoctorsForSubspeciality],
+  );
+
+  const useGroupedLayout = apiGroupedCatalog !== undefined && apiGroupedCatalog !== null;
+
+  const departments = useMemo<Department[]>(() => {
+    if (useGroupedLayout) return apiGroupedCatalog.flatMap((g) => g.departments);
+    if (apiCatalog !== undefined && apiCatalog !== null) return apiCatalog;
+    if (disableStaticFallback) return [];
+    return staticDepartments.filter((dept) => dept.name !== "Allergy & Immunology");
+  }, [apiCatalog, apiGroupedCatalog, useGroupedLayout, disableStaticFallback]);
   const doctorScrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
   const { lang, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
 

@@ -367,7 +367,7 @@ const DepartmentDetail = () => {
                   {dept.name}
                 </Link>
                 <ChevronRight className="w-3 h-3" />
-                <span className="text-foreground font-medium">{activeSub.name}</span>
+                <span className="text-foreground font-bold">{activeSub.name}</span>
               </>
             ) : matchedApiSubName && slug ? (
               <>
@@ -537,57 +537,57 @@ const DepartmentDetail = () => {
 
       {/* Content Sections */}
       {displayDept && (
-      <section className="py-8 md:py-12">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto space-y-8">
-            {displayDept.sections.map((section, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8"
-              >
-                <h3 className="font-serif text-lg md:text-xl text-foreground mb-4">{section.title}</h3>
-                {section.content && (
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
-                    {section.content}
-                  </p>
-                )}
-                {section.items && (
-                  <div className="space-y-2.5">
-                    {section.items.map((item, j) => (
-                      <div key={j} className="flex items-start gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-                        <span className="font-body text-sm text-foreground leading-relaxed">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {section.subsections?.map((sub, k) => (
-                  <div key={k} className="mt-6 pl-4 border-l-2 border-accent/20">
-                    <h4 className="font-serif text-base text-foreground mb-3">{sub.title}</h4>
-                    {sub.content && (
-                      <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">{sub.content}</p>
-                    )}
-                    {sub.items && (
-                      <div className="space-y-2">
-                        {sub.items.map((item, l) => (
-                          <div key={l} className="flex items-start gap-3">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
-                            <span className="font-body text-sm text-foreground">{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </motion.div>
-            ))}
+        <section className="py-8 md:py-12">
+          <div className="container mx-auto px-6">
+            <div className="max-w-4xl mx-auto space-y-8">
+              {displayDept.sections.map((section, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8"
+                >
+                  <h3 className="font-serif text-lg md:text-xl text-foreground mb-4">{section.title}</h3>
+                  {section.content && (
+                    <p className="font-body text-sm text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
+                      {section.content}
+                    </p>
+                  )}
+                  {section.items && (
+                    <div className="space-y-2.5">
+                      {section.items.map((item, j) => (
+                        <div key={j} className="flex items-start gap-3">
+                          <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+                          <span className="font-body text-sm text-foreground leading-relaxed">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {section.subsections?.map((sub, k) => (
+                    <div key={k} className="mt-6 pl-4 border-l-2 border-accent/20">
+                      <h4 className="font-serif text-base text-foreground mb-3">{sub.title}</h4>
+                      {sub.content && (
+                        <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">{sub.content}</p>
+                      )}
+                      {sub.items && (
+                        <div className="space-y-2">
+                          {sub.items.map((item, l) => (
+                            <div key={l} className="flex items-start gap-3">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                              <span className="font-body text-sm text-foreground">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* Image/Video Placeholder 2 */}
@@ -623,7 +623,7 @@ const DepartmentDetail = () => {
                       onClick={() => setExpandedSub(expandedSub === sub.slug ? null : sub.slug)}
                       className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors"
                     >
-                      <span className="font-serif text-base text-foreground">{sub.name}</span>
+                      <span className="font-serif font-bold text-base text-foreground">{sub.name}</span>
                       <ChevronDown
                         className={`w-5 h-5 text-muted-foreground transition-transform ${expandedSub === sub.slug ? "rotate-180" : ""
                           }`}

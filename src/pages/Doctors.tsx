@@ -8,7 +8,22 @@ import ChatButton from "@/components/ChatButton";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Doctor } from "@/data/doctors";
+import type { Doctor } from "@/data/doctors";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getDoctorDepartmentIds,
+  getDoctorsByDepartment,
+  mapApiDoctorRowToDoctor,
+} from "@/api/doctors";
+import { getAllDepartments } from "@/api/department";
+
+type DepartmentDoctorGroup = {
+  departmentId: string;
+  department: string;
+  departmentAr: string;
+  doctors: Doctor[];
+};
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getDoctorDepartmentIds,
@@ -124,9 +139,11 @@ const DepartmentRow = ({ department, departmentAr, docs }: { department: string;
           {lang === "ar" ? departmentAr : department}
         </h2>
         {deptDesc && (
-          <p className="text-muted-foreground font-body text-xs mt-1 line-clamp-2">
-            {lang === "ar" ? deptDesc.ar : deptDesc.en}
-          </p>
+          <div className="bg-popover border border-border/50 rounded-2xl p-4 md:p-5 shadow-sm">
+            <p className="text-muted-foreground font-body text-base leading-relaxed">
+              {lang === "ar" ? deptDesc.ar : deptDesc.en}
+            </p>
+          </div>
         )}
       </div>
       <div className="relative group/carousel">
@@ -231,30 +248,21 @@ const Doctors = () => {
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return [];
-
     return allDoctors.filter((doc) => {
       const searchableFields = [
-        doc.name,
-        doc.nameAr,
-        doc.specialty,
-        doc.specialtyAr,
-        doc.department,
-        doc.departmentAr,
-        doc.title,
-        doc.titleAr,
+        doc.name, doc.nameAr, doc.specialty, doc.specialtyAr,
+        doc.department, doc.departmentAr, doc.title, doc.titleAr,
         ...(doc.symptoms || []),
       ];
-
       return searchableFields.some((field) => (field || "").toLowerCase().includes(query));
     });
   }, [allDoctors, searchQuery]);
 
   const isSearching = searchQuery.trim().length > 0;
   const locale = lang === "ar" ? "ar" : "en";
+
   const stripTitlePrefix = (name: string) =>
-    name
-      .replace(/^(dr|prof|professor)\.?\s+/i, "")
-      .trim();
+    name.replace(/^(dr|prof|professor)\.?\s+/i, "").trim();
 
   const sortedGroups = useMemo(() => {
     const ordered = [...groups].sort((a, b) =>

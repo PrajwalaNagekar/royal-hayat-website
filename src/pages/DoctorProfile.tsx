@@ -156,7 +156,7 @@ const DoctorProfile = () => {
         selectedDoctor: doctor.id,
         isRequestMode: doctor.availableOnline === false,
         canBookSlot: doctor.availableOnline !== false,
-        step: 3,
+        step: 2,
       },
     });
   };
@@ -199,20 +199,18 @@ const DoctorProfile = () => {
 
                   {/* Availability Badge */}
                   {doctor.hideBooking !== true && (
-                    <div className={`flex items-center gap-1.5 mb-4 justify-center ${
-                      isOnlineAvailable
+                    <div className={`flex items-center gap-1.5 mb-4 justify-center ${isOnlineAvailable
                         ? "text-green-600"
                         : fromBooking
                           ? "text-muted-foreground"
                           : "text-red-500"
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full ${
-                        isOnlineAvailable
+                      }`}>
+                      <div className={`w-2 h-2 rounded-full ${isOnlineAvailable
                           ? "bg-green-500"
                           : fromBooking
                             ? "bg-muted-foreground"
                             : "bg-red-500"
-                      }`} />
+                        }`} />
                       <span className="font-body text-xs">
                         {isOnlineAvailable
                           ? (lang === "ar" ? "متاح للحجز الإلكتروني" : "Book Online")

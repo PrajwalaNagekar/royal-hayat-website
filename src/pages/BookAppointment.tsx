@@ -4,13 +4,15 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   Brain, Sparkles, Stethoscope, Building2, User, CheckCircle2,
   Search, ArrowRight, ArrowLeft, Clock,
-  AlertCircle, FileText, ClipboardList, UserPlus, LogIn, Calendar,
+  Activity, Heart, Baby, Eye, Bone, Pill, Microscope, Scissors, Smile,
+  AlertCircle, FileText, ClipboardList, UserPlus, LogIn, Calendar, Shield, Loader2
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import ChatButton from "@/components/ChatButton";
+
 import type { Doctor } from "@/data/doctors";
 import { fetchAllDepartmentsPages } from "@/api/department";
 import {
@@ -18,17 +20,23 @@ import {
   getDoctorsByDepartment,
   mapApiDoctorRowToDoctor,
 } from "@/api/doctors";
-// TEMP: national ID / civil ID modal flow disabled — uncomment when re-enabling identity verification
-// // TEMP: civil ID verification disabled — uncomment when re-enabling
-// import { getIdentityStatus, startIdentityVerification } from "@/api/identity";
+import { 
+  getAvailability, 
+  bookAppointment, 
+  getPatient, 
+  type Slot 
+} from "@/api/royalhayat";
+import { getIdentityStatus, startIdentityVerification } from "@/api/identity";
+import { postEnquiry } from "@/api/enquiry";
 
-
+// Helper types and functions for dynamic API data
 type BookingDeptRow = {
   id: string;
   name: string;
   nameAr: string;
   category: string;
   slug: string;
+  specialityCode?: string;
 };
 
 const OID = /^[0-9a-fA-F]{24}$/i;
@@ -59,6 +67,7 @@ function apiRowToBookingDept(row: Record<string, unknown>): BookingDeptRow | nul
     nameAr: name,
     category: category || "—",
     slug: departmentSlug(name, id),
+    specialityCode: typeof row.departmentId === "string" ? row.departmentId : undefined,
   };
 }
 
@@ -76,9 +85,6 @@ function isAlSafwaDept(d: BookingDeptRow): boolean {
   return n.includes("safwa") || n.includes("al-safwa") || d.slug.includes("safwa");
 }
 
-/** TEMP: Skip patient-details (step 2) — go straight to time slots after doctor. Set to `false` to restore "Confirm Patient Details" / patient forms. */
-const SKIP_PATIENT_DETAILS_STEP = true;
-
 // ─── COMPONENT ───────────────────────────────────────────────────────────────
 
 const BookAppointment = () => {
@@ -90,13 +96,7 @@ const BookAppointment = () => {
 
   const locState = (location.state as any) ?? {};
 
-  const initialStep = (() => {
-    const s = locState.step ?? 0;
-    if (SKIP_PATIENT_DETAILS_STEP && s === 2) return 3;
-    return s;
-  })();
-
-  const [step, setStep] = useState<number>(initialStep);
+  const [step, setStep] = useState<number>(locState.step ?? 0);
   const [bookingPath, setBookingPath] = useState<"primary" | "doctor" | "symptoms" | null>(locState.bookingPath ?? null);
 
   const [departmentsList, setDepartmentsList] = useState<BookingDeptRow[]>([]);
@@ -124,40 +124,140 @@ const BookAppointment = () => {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  // Generate half-hour slots: 9:00–13:00 and 14:00–17:00 (skip 13:00–14:00 lunch)
-  const timeSlots = (() => {
-    const slots: string[] = [];
-    const addSlots = (startH: number, endH: number) => {
-      for (let h = startH; h < endH; h++) {
-        slots.push(`${String(h).padStart(2, "0")}:00`);
-        slots.push(`${String(h).padStart(2, "0")}:30`);
+  // Dynamic Availability State
+  const [specialityCode, setSpecialityCode] = useState<string | null>(null);
+  const [providerCode, setProviderCode] = useState<string | null>(null);
+  const [serviceCode, setServiceCode] = useState<string>("S001");
+  const [fetchedSlots, setFetchedSlots] = useState<Slot[]>([]);
+  const [patientId, setPatientId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+
+  // Sync specialityCode with selectedDept (uses departmentId from department object)
+  useEffect(() => {
+    if (selectedDept) {
+      const dept = departmentsList.find(d => d.id === selectedDept);
+      if (dept?.specialityCode) {
+        console.log("Setting specialityCode from departmentId:", dept.specialityCode);
+        setSpecialityCode(dept.specialityCode);
+      } else if (dept) {
+        console.warn("Department found but no departmentId available for:", dept.name);
+      }
+    }
+  }, [selectedDept, departmentsList]);
+
+  // Sync providerCode with selectedDoctor (uses doctorId from doctor object)
+  useEffect(() => {
+    if (selectedDoctor) {
+      const doc = allApiDoctors.find(d => d.id === selectedDoctor) || deptDoctorList.find(d => d.id === selectedDoctor);
+      if (doc?.providerCode) {
+        console.log("Setting providerCode from doctorId:", doc.providerCode);
+        setProviderCode(doc.providerCode);
+      } else if (doc) {
+        console.warn("Doctor found but no doctorId (providerCode) available for:", doc.name);
+      }
+    }
+  }, [selectedDoctor, allApiDoctors, deptDoctorList]);
+
+  // Fetch availability when all params are ready
+  useEffect(() => {
+    const fetchSlots = async () => {
+      // Ensure we have all necessary codes and a date before calling the API
+      if (!serviceCode || !selectedDate || !specialityCode || !providerCode) {
+        console.log("Missing params for availability fetch:", { serviceCode, selectedDate, specialityCode, providerCode });
+        setFetchedSlots([]);
+        return;
+      }
+
+      console.log("Fetching availability with:", { specialityCode, providerCode, serviceCode, selectedDate });
+      setIsLoadingSlots(true);
+      try {
+        const res = await getAvailability({
+          specialitycode: specialityCode,
+          providercode: providerCode,
+          servicecode: serviceCode,
+          datefrom: selectedDate,
+          dateto: selectedDate
+        });
+        if (res.success && res.data?.slot_list) {
+          setFetchedSlots(res.data.slot_list);
+        } else {
+          setFetchedSlots([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch availability:", err);
+        setFetchedSlots([]);
+      } finally {
+        setIsLoadingSlots(false);
       }
     };
-    addSlots(9, 13);   // 9:00 – 12:30
-    addSlots(14, 17);  // 14:00 – 16:30
-    return slots;
-  })();
+    fetchSlots();
+  }, [specialityCode, providerCode, serviceCode, selectedDate]);
 
-  const formatSlot = (time: string) => {
-    const [h, m] = time.split(":").map(Number);
-    const endM = m + 30;
-    const endH = endM >= 60 ? h + 1 : h;
-    const endMin = endM >= 60 ? endM - 60 : endM;
+  const timeSlots = fetchedSlots.map(s => s.slot_from_time).filter(Boolean);
+
+  const formatSlotRange = (slot: Slot) => {
+    if (!slot.slot_from_time || !slot.slot_from_time.includes(":")) return "";
+    
+    const parseTime = (t: string) => {
+      const [hStr, mStr] = t.split(":");
+      return { h: parseInt(hStr), m: parseInt(mStr) };
+    };
+
     const fmt = (hh: number, mm: number) => {
       const suffix = hh < 12 ? "AM" : "PM";
       const hh12 = hh % 12 === 0 ? 12 : hh % 12;
       return `${hh12}:${String(mm).padStart(2, "0")} ${suffix}`;
     };
-    return `${fmt(h, m)} – ${fmt(endH, endMin)}`;
+
+    const start = parseTime(slot.slot_from_time);
+    let end;
+    if (slot.slot_to_time && slot.slot_to_time.includes(":")) {
+      end = parseTime(slot.slot_to_time);
+    } else {
+      // Fallback: +30 min
+      const m = start.m + 30;
+      end = { h: m >= 60 ? start.h + 1 : start.h, m: m >= 60 ? m - 60 : m };
+    }
+
+    return `${fmt(start.h, start.m)} – ${fmt(end.h, end.m)}`;
+  };
+
+  const formatTimeString = (time: string | null) => {
+    if (!time || !time.includes(":")) return time || "";
+    const [hStr, mStr] = time.split(":");
+    const h = parseInt(hStr);
+    const m = parseInt(mStr);
+    const suffix = h < 12 ? "AM" : "PM";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
+  };
+
+  const slotsByPeriod = {
+    morning: fetchedSlots.filter((s) => {
+      if (!s.slot_from_time || !s.slot_from_time.includes(":")) return false;
+      return parseInt(s.slot_from_time.split(":")[0]) < 12;
+    }),
+    afternoon: fetchedSlots.filter((s) => {
+      if (!s.slot_from_time || !s.slot_from_time.includes(":")) return false;
+      const h = parseInt(s.slot_from_time.split(":")[0]);
+      return h >= 12 && h < 17;
+    }),
+    evening: fetchedSlots.filter((s) => {
+      if (!s.slot_from_time || !s.slot_from_time.includes(":")) return false;
+      return parseInt(s.slot_from_time.split(":")[0]) >= 17;
+    }),
   };
 
   // Get next 7 days (excluding Fridays = day 5)
   const availableDates = (() => {
     const dates: { value: string; label: string }[] = [];
     const d = new Date();
-    d.setDate(d.getDate() + 1); // start from tomorrow
+    d.setDate(d.getDate() + 1);
     while (dates.length < 7) {
-      if (d.getDay() !== 5) { // skip Friday
+      if (d.getDay() !== 5) {
         dates.push({
           value: d.toISOString().split("T")[0],
           label: d.toLocaleDateString(lang === "ar" ? "ar-KW" : "en-GB", { weekday: "short", day: "numeric", month: "short" }),
@@ -168,7 +268,7 @@ const BookAppointment = () => {
     return dates;
   })();
 
-  // Step 3: Patient Details
+  // Patient Details State
   const [patientType, setPatientType] = useState<"returning" | "new" | null>(null);
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
@@ -193,6 +293,7 @@ const BookAppointment = () => {
 
   const [booked, setBooked] = useState(false);
 
+  // Fetch Departments and Doctors from API
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -225,6 +326,7 @@ const BookAppointment = () => {
     };
   }, [isAr]);
 
+  // Fetch Doctors for selected department
   useEffect(() => {
     if (!selectedDept || bookingPath !== "primary") {
       setDeptDoctorList([]);
@@ -251,16 +353,15 @@ const BookAppointment = () => {
     };
   }, [selectedDept, bookingPath, departmentsList]);
 
-  // Read query param on mount (skip if restoring from navigation state)
+  // Read query param on mount
   useEffect(() => {
-    if (locState.step != null) return; // restoring from back-navigation, don't override
+    if (locState.step != null) return; 
     const pathParam = searchParams.get("path");
     if (pathParam === "primary") { setBookingPath("primary"); setStep(0); }
     else if (pathParam === "doctor") { setBookingPath("doctor"); setStep(1); }
     else if (pathParam === "symptoms") { setBookingPath("symptoms"); setStep(0); }
-  }, [searchParams]);
+  }, [searchParams, locState.step]);
 
-  // Scroll to top when booking is confirmed to avoid mobile cut-off/zoom-in issues
   useEffect(() => {
     if (booked) {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -293,6 +394,7 @@ const BookAppointment = () => {
 
   const resolveDeptIdForDoctor = (doc: Doctor): string | null =>
     doc.departmentId ?? departmentsList.find((d) => d.name === doc.department)?.id ?? null;
+
   const formattedDob = patientDob
     ? patientDob.split("-").reverse().join("/")
     : "";
@@ -326,29 +428,85 @@ const BookAppointment = () => {
       case 0: return selectedDept !== null;
       case 1: return selectedDoctor !== null;
       case 2:
-        if (SKIP_PATIENT_DETAILS_STEP) return true;
-        if (patientType === "returning") return patientName.trim() !== "";
+        if (patientType === "returning") return true;
         return patientType === "new" && patientName.trim() !== "" && /^\d{8}$/.test(patientPhone.trim()) && patientDob !== "" && patientGender !== "";
       case 3: return selectedDate !== "" && selectedSlot !== null;
       default: return true;
     }
   };
 
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setBookingError(null);
+    try {
+      if (patientType === "returning" && patientId && selectedSlotId) {
+        const res = await bookAppointment({
+          patientId: patientId,
+          slotBookingId: selectedSlotId
+        });
+        if (res.success) {
+          setBooked(true);
+          return;
+        }
+      }
+
+      const enquiryPayload = {
+        fullName: patientName,
+        email: "guest@royalhayat.com",
+        phone: patientPhone || nationalId || "",
+        department: selectedDeptObj?.name || selectedDoctorObj?.specialty || "Appointment Request",
+        message: `Appointment requested for ${selectedDate} at ${selectedSlot}. Patient Type: ${patientType}. Doctor: ${selectedDoctorObj?.name}.`
+      };
+      
+      const enqRes = await postEnquiry(enquiryPayload);
+      if (enqRes.success) {
+        setBooked(true);
+      } else {
+        throw new Error(isAr ? "فشل إرسال الطلب" : "Failed to submit request");
+      }
+    } catch (err: any) {
+      console.error("Booking failed:", err);
+      setBookingError(err.message || (isAr ? "حدث خطأ أثناء معالجة طلبك" : "An error occurred while processing your request"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleNext = () => {
-    if (step === 2 && !SKIP_PATIENT_DETAILS_STEP) {
+    if (step === 2) {
       if (patientType === "new" && !validatePatientDetails()) return;
       if (!patientType) return;
     }
-    if (step === 4) { setBooked(true); return; }
+    if (step === 4) { 
+      handleConfirm();
+      return; 
+    }
     setStep((s) => Math.min(s + 1, 4));
   };
 
-  /* TEMP: National ID / Afiyati flow — restore with `api/identity` import above
   const extractVerifiedName = (source: any) => {
+    if (source?.personName) {
+      return {
+        english: source.personName.english || source.personName.en || "",
+        arabic: source.personName.arabic || source.personName.ar || "",
+      };
+    }
+    if (source?.name) {
+      return {
+        english: source.name.english || source.name.en || "",
+        arabic: source.name.arabic || source.name.ar || "",
+      };
+    }
     const payload = source?.raw?.payload || source?.raw || source?.identityData?.payload || source?.identityData || {};
+    if (payload?.name) {
+      return {
+        english: payload.name.english || payload.name.en || "",
+        arabic: payload.name.arabic || payload.name.ar || "",
+      };
+    }
     return {
-      english: payload?.name?.english || payload?.name?.en || "",
-      arabic: payload?.name?.arabic || payload?.name?.ar || "",
+      english: payload?.englishName || payload?.nameEn || payload?.name_en || payload?.en_name || "",
+      arabic: payload?.arabicName || payload?.nameAr || payload?.name_ar || payload?.ar_name || "",
     };
   };
 
@@ -372,10 +530,19 @@ const BookAppointment = () => {
       const names = extractVerifiedName(response);
       const hasName = Boolean(names.english || names.arabic);
       if (response?.verified === true && hasName) {
-        setVerifiedPersonName(names);
         const pickedName = isAr ? (names.arabic || names.english) : (names.english || names.arabic);
         setPatientName(pickedName);
         setPatientType("returning");
+        
+        try {
+          const pRes = await getPatient({ nationalid: civilId });
+          if (pRes.success && pRes.data?.patient?.patient_id) {
+            setPatientId(pRes.data.patient.patient_id);
+          }
+        } catch (err) {
+          console.error("Failed to fetch patient data:", err);
+        }
+
         setShowReturningPatientModal(false);
         return;
       }
@@ -430,10 +597,19 @@ const BookAppointment = () => {
         setNationalIdError(isAr ? "تمت الموافقة ولكن لا يوجد اسم متاح حالياً." : "Approved but no name is available yet.");
         return;
       }
-      setVerifiedPersonName(names);
       const pickedName = isAr ? (names.arabic || names.english) : (names.english || names.arabic);
       setPatientName(pickedName);
       setPatientType("returning");
+
+      try {
+        const pRes = await getPatient({ nationalid: nationalId });
+        if (pRes.success && pRes.data?.patient?.patient_id) {
+          setPatientId(pRes.data.patient.patient_id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch patient data:", err);
+      }
+
       setShowReturningPatientModal(false);
       setVerifyOperationId(null);
       setVerifyStatusMessage("");
@@ -446,10 +622,6 @@ const BookAppointment = () => {
       setIsCheckingApproval(false);
     }
   };
-  */
-
-  const handleNationalIdVerify = async () => {};
-  const handleCheckApproval = async () => {};
 
   const goToInitialBookingScreen = () => {
     setShowReturningPatientModal(false);
@@ -469,9 +641,10 @@ const BookAppointment = () => {
       setBookingPath(null);
       return;
     }
-    if (SKIP_PATIENT_DETAILS_STEP && step === 3) {
-      setStep(1);
-      return;
+    if (step === 3 && patientType === "returning") {
+      setPatientType(null);
+      setPatientName("");
+      setPatientErrors({});
     }
     setStep((s) => Math.max(s - 1, 0));
   };
@@ -575,6 +748,17 @@ const BookAppointment = () => {
                     <p className="text-foreground font-medium">{patientName}</p>
                   </div>
                 </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-accent mt-0.5" />
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{isAr ? "الموعد" : "Time Slot"}</p>
+                    <p className="text-foreground font-medium">
+                      {selectedDate && selectedSlot ? (
+                        `${formattedSelectedDate} • ${formatTimeString(selectedSlot)}`
+                      ) : "—"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </motion.div>
 
@@ -626,7 +810,6 @@ const BookAppointment = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
-            {/* PATH 1: Department first */}
             <motion.button whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(74,20,35,0.12)" }} whileTap={{ scale: 0.98 }}
               onClick={() => { setBookingPath("primary"); setStep(0); }}
               className="bg-popover rounded-2xl p-5 md:p-8 border border-border text-center transition-all hover:border-primary/40">
@@ -639,7 +822,6 @@ const BookAppointment = () => {
               </p>
             </motion.button>
 
-            {/* PATH 2: Know Doctor */}
             <motion.button whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(74,20,35,0.12)" }} whileTap={{ scale: 0.98 }}
               onClick={() => { setBookingPath("doctor"); setStep(1); }}
               className="bg-popover rounded-2xl p-5 md:p-8 border border-border text-center transition-all hover:border-accent/40">
@@ -652,7 +834,6 @@ const BookAppointment = () => {
               </p>
             </motion.button>
 
-            {/* PATH 3: Symptoms */}
             <motion.button whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(74,20,35,0.12)" }} whileTap={{ scale: 0.98 }}
               onClick={() => { setBookingPath("symptoms"); setStep(0); }}
               className="bg-popover rounded-2xl p-5 md:p-8 border border-border text-center transition-all hover:border-primary/40">
@@ -673,7 +854,7 @@ const BookAppointment = () => {
     );
   }
 
-  // ─── SYMPTOM PATH (inline, then transitions to primary flow) ───────────────
+  // ─── SYMPTOM PATH ───────────────
   if (bookingPath === "symptoms" && symptomResults === null) {
     return (
       <div className="min-h-screen bg-background pt-[var(--header-height,56px)] overflow-x-hidden">
@@ -702,7 +883,6 @@ const BookAppointment = () => {
               placeholder={t("describeInDetail")}
               className="w-full h-24 bg-muted/20 border border-border rounded-xl p-4 font-body text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-accent/30 mb-4" />
 
-            {/* AI Disclaimer - PROMINENT */}
             <div className="bg-destructive/10 rounded-xl p-4 border-2 border-destructive/30 mb-4">
               <p className="font-body text-sm text-foreground leading-relaxed font-medium">
                 <AlertCircle className="w-4 h-4 inline mr-2 text-destructive" />
@@ -745,7 +925,7 @@ const BookAppointment = () => {
     );
   }
 
-  // After symptoms analyzed, show results then flow into primary
+  // After symptoms analyzed
   if (bookingPath === "symptoms" && symptomResults !== null && step === 0) {
     return (
       <div className="min-h-screen bg-background pt-[var(--header-height,56px)] overflow-x-hidden">
@@ -813,15 +993,11 @@ const BookAppointment = () => {
           <h1 className="text-3xl md:text-4xl font-serif text-foreground">{t("bookYourAppointment")}</h1>
         </motion.div>
 
-        {/* Progress Steps */}
         <div className="flex items-center justify-center gap-1 mb-8 md:mb-12 flex-wrap">
           {steps.map((s, i) => (
             <div key={s.label} className="flex items-center">
               <motion.button
-                onClick={() => {
-                  if (SKIP_PATIENT_DETAILS_STEP && i === 2) return;
-                  if (i < step) setStep(i);
-                }}
+                onClick={() => i < step && setStep(i)}
                 disabled={i > step}
                 whileHover={i < step ? { scale: 1.05 } : {}}
                 className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-body tracking-wide transition-all duration-300 ${i === step ? "bg-primary text-primary-foreground shadow-md"
@@ -837,13 +1013,10 @@ const BookAppointment = () => {
         </div>
 
         <AnimatePresence mode="wait">
-          {/* STEP 0: DEPARTMENTS (primary path) */}
           {step === 0 && bookingPath === "primary" && (
             <motion.div key="s0" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
               <div className="max-w-4xl mx-auto">
-                {catalogError ? (
-                  <p className="text-center text-destructive font-body text-sm mb-4">{catalogError}</p>
-                ) : null}
+                {catalogError ? <p className="text-center text-destructive font-body text-sm mb-4">{catalogError}</p> : null}
                 <div className="relative mb-6">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input type="text" value={deptSearch} onChange={(e) => setDeptSearch(e.target.value)}
@@ -856,36 +1029,30 @@ const BookAppointment = () => {
                     {isAr ? "جاري تحميل الأقسام…" : "Loading departments…"}
                   </div>
                 ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {(() => {
-                    const displayDepts = deptSearch.trim() || showAllDepts ? filteredDepts : filteredDepts.slice(0, 6);
-                    return displayDepts.map((dept) => (
-                      <motion.button key={dept.id} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          if (isAlSafwaDept(dept)) {
-                            navigate("/al-safwa", { state: { fromBookAppointment: true } });
-                            return;
-                          }
-                          if (isHomeHealthDept(dept)) {
-                            navigate("/home-health", { state: { fromBookAppointment: true } });
-                            return;
-                          }
-                          setSelectedDept(dept.id);
-                          setStep(1);
-                        }}
-                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${selectedDept === dept.id
-                          ? "bg-primary text-primary-foreground border-primary shadow-md"
-                          : "bg-popover border-border hover:border-accent/40 text-foreground"
-                          }`}>
-                        <Stethoscope className={`w-5 h-5 flex-shrink-0 ${selectedDept === dept.id ? "" : "text-accent"}`} />
-                        <div className="min-w-0">
-                          <p className="font-body text-sm font-medium truncate">{dept.name}</p>
-                          <p className={`font-body text-xs ${selectedDept === dept.id ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{dept.category}</p>
-                        </div>
-                      </motion.button>
-                    ));
-                  })()}
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {(() => {
+                      const displayDepts = deptSearch.trim() || showAllDepts ? filteredDepts : filteredDepts.slice(0, 6);
+                      return displayDepts.map((dept) => (
+                        <motion.button key={dept.id} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            if (isAlSafwaDept(dept)) { navigate("/al-safwa", { state: { fromBookAppointment: true } }); return; }
+                            if (isHomeHealthDept(dept)) { navigate("/home-health", { state: { fromBookAppointment: true } }); return; }
+                            setSelectedDept(dept.id);
+                            setStep(1);
+                          }}
+                          className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${selectedDept === dept.id
+                            ? "bg-primary text-primary-foreground border-primary shadow-md"
+                            : "bg-popover border-border hover:border-accent/40 text-foreground"
+                            }`}>
+                          <Stethoscope className={`w-5 h-5 flex-shrink-0 ${selectedDept === dept.id ? "" : "text-accent"}`} />
+                          <div className="min-w-0">
+                            <p className="font-body text-sm font-medium truncate">{dept.name}</p>
+                            <p className={`font-body text-xs ${selectedDept === dept.id ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{dept.category}</p>
+                          </div>
+                        </motion.button>
+                      ));
+                    })()}
+                  </div>
                 )}
                 {!catalogLoading && !showAllDepts && !deptSearch.trim() && filteredDepts.length > 6 && (
                   <div className="text-center mt-6">
@@ -899,13 +1066,10 @@ const BookAppointment = () => {
             </motion.div>
           )}
 
-          {/* STEP 1: DOCTORS */}
           {step === 1 && (
             <motion.div key="s1" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
               <div className="max-w-4xl mx-auto">
-                {catalogError ? (
-                  <p className="text-center text-destructive font-body text-sm mb-4">{catalogError}</p>
-                ) : null}
+                {catalogError ? <p className="text-center text-destructive font-body text-sm mb-4">{catalogError}</p> : null}
                 <div className="relative mb-6">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input type="text" value={doctorSearch} onChange={(e) => { setDoctorSearch(e.target.value); setShowAllDoctors(true); }}
@@ -917,101 +1081,44 @@ const BookAppointment = () => {
                   const docList = bookingPath === "doctor" ? filteredAllDoctors : doctors;
                   const displayList = showAllDoctors || doctorSearch.trim() ? docList : docList.slice(0, 6);
                   if (catalogLoading || (bookingPath === "primary" && deptDoctorLoading)) {
-                    return (
-                      <div className="py-16 text-center text-muted-foreground font-body text-sm">
-                        {isAr ? "جاري تحميل الأطباء…" : "Loading doctors…"}
-                      </div>
-                    );
+                    return <div className="py-16 text-center text-muted-foreground font-body text-sm">{isAr ? "جاري تحميل الأطباء…" : "Loading doctors…"}</div>;
                   }
                   return (
                     <>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {displayList.map((doc) => (
-                          <motion.div key={doc.id}
-                            whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(74,20,35,0.12)" }}
+                          <motion.div key={doc.id} whileHover={{ y: -6, boxShadow: "0 20px 40px -12px rgba(74,20,35,0.12)" }}
                             className={`relative rounded-2xl border flex flex-col cursor-pointer transition-all duration-300 overflow-hidden ${selectedDoctor === doc.id ? "border-primary shadow-md" : "border-border/50 hover:border-accent/40"}`}
                             onClick={() => {
                               const resolvedDeptId = selectedDept ?? resolveDeptIdForDoctor(doc);
                               navigate(`/doctors/${doc.id}`, {
-                                state: {
-                                  fromBookAppointment: true,
-                                  step,
-                                  bookingPath: bookingPath ?? "primary",
-                                  selectedDept: resolvedDeptId,
-                                  selectedDoctor: doc.id,
-                                  isRequestMode: doc.availableOnline === false,
-                                  canBookSlot: doc.availableOnline !== false,
-                                }
+                                state: { fromBookAppointment: true, step, bookingPath: bookingPath ?? "primary", selectedDept: resolvedDeptId, selectedDoctor: doc.id, isRequestMode: doc.availableOnline === false, canBookSlot: doc.availableOnline !== false }
                               });
                             }}>
-                            {/* Photo area */}
                             <div className="bg-white h-64 flex items-center justify-center relative overflow-hidden shrink-0 rounded-t-2xl">
-                              {doc.image ? (
-                                <img src={doc.image} alt={isAr ? doc.nameAr : doc.name} className="w-full h-full object-cover object-top" />
-                              ) : (
-                                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <span className="text-xl font-serif text-primary">{doc.initials}</span>
-                                </div>
-                              )}
-                              <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                                <Stethoscope className="w-3.5 h-3.5 text-primary" />
-                              </div>
-                              {selectedDoctor === doc.id && (
-                                <div className="absolute top-3 left-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                                  <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
-                                </div>
-                              )}
+                              {doc.image ? <img src={doc.image} alt={isAr ? doc.nameAr : doc.name} className="w-full h-full object-cover object-top" /> : <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center"><span className="text-xl font-serif text-primary">{doc.initials}</span></div>}
+                              <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm"><Stethoscope className="w-3.5 h-3.5 text-primary" /></div>
+                              {selectedDoctor === doc.id && <div className="absolute top-3 left-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center"><CheckCircle2 className="w-4 h-4 text-primary-foreground" /></div>}
                             </div>
-                            {/* Info area */}
                             <div className="p-4 flex flex-col flex-grow bg-popover">
                               <p className="text-accent text-[10px] tracking-[0.15em] uppercase font-body mb-1">{isAr ? doc.specialtyAr : doc.specialty}</p>
                               <h4 className="font-serif text-sm text-foreground mb-0.5 leading-snug">{isAr ? doc.nameAr : doc.name}</h4>
                               <p className="text-muted-foreground font-body text-[11px] mb-2 line-clamp-1">{isAr ? doc.titleAr : doc.title}</p>
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                {(isAr ? doc.languagesAr : doc.languages).map((l) => (
-                                  <span key={l} className="px-2 py-0.5 rounded-full bg-secondary/40 text-[10px] font-body text-foreground">{l}</span>
-                                ))}
-                              </div>
+                              <div className="flex flex-wrap gap-1 mb-2">{(isAr ? doc.languagesAr : doc.languages).map((l) => <span key={l} className="px-2 py-0.5 rounded-full bg-secondary/40 text-[10px] font-body text-foreground">{l}</span>)}</div>
                               {doc.hideBooking !== true && (
                                 <div className={`flex items-center gap-1.5 mb-3 ${doc.availableOnline !== false ? "text-green-600" : "text-gray-500"}`}>
                                   <div className={`w-1.5 h-1.5 rounded-full ${doc.availableOnline !== false ? "bg-green-500" : "bg-muted-foreground"}`} />
-                                  <span className="font-body text-[10px]">
-                                    {doc.availableOnline !== false
-                                      ? (isAr ? "متاح للحجز" : "Book Online")
-                                      : (isAr ? "غير متاح حالياً" : "Request Appointment")}
-                                  </span>
+                                  <span className="font-body text-[10px]">{doc.availableOnline !== false ? (isAr ? "متاح للحجز" : "Book Online") : (isAr ? "غير متاح حالياً" : "Request Appointment")}</span>
                                 </div>
                               )}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const resolvedDeptId = selectedDept ?? resolveDeptIdForDoctor(doc);
-                                  navigate(`/doctors/${doc.id}`, {
-                                    state: {
-                                      fromBookAppointment: true,
-                                      step,
-                                      bookingPath: bookingPath ?? "primary",
-                                      selectedDept: resolvedDeptId,
-                                      selectedDoctor: doc.id,
-                                      isRequestMode: doc.availableOnline === false,
-                                      canBookSlot: doc.availableOnline !== false,
-                                    }
-                                  });
-                                }}
-                                className="mt-auto inline-flex items-center gap-1 text-primary font-body text-xs hover:text-accent transition-colors"
-                              >
-                                {isAr ? "عرض الملف الشخصي ←" : "View Profile →"}
-                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); const resolvedDeptId = selectedDept ?? resolveDeptIdForDoctor(doc); navigate(`/doctors/${doc.id}`, { state: { fromBookAppointment: true, step, bookingPath: bookingPath ?? "primary", selectedDept: resolvedDeptId, selectedDoctor: doc.id, isRequestMode: doc.availableOnline === false, canBookSlot: doc.availableOnline !== false } }); }} className="mt-auto inline-flex items-center gap-1 text-primary font-body text-xs hover:text-accent transition-colors">{isAr ? "عرض الملف الشخصي ←" : "View Profile →"}</button>
                             </div>
                           </motion.div>
                         ))}
                       </div>
                       {!showAllDoctors && !doctorSearch.trim() && docList.length > 6 && (
                         <div className="text-center mt-6">
-                          <button onClick={() => setShowAllDoctors(true)}
-                            className="px-6 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase border border-border hover:border-accent/40 text-muted-foreground hover:text-foreground transition-all">
-                            {lang === "ar" ? "عرض جميع الأطباء" : `View All (${docList.length})`}
-                          </button>
+                          <button onClick={() => setShowAllDoctors(true)} className="px-6 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase border border-border hover:border-accent/40 text-muted-foreground hover:text-foreground transition-all">{lang === "ar" ? "عرض جميع الأطباء" : `View All (${docList.length})`}</button>
                         </div>
                       )}
                     </>
@@ -1021,301 +1128,127 @@ const BookAppointment = () => {
             </motion.div>
           )}
 
-          {/* STEP 2: PATIENT INFO — entire block skipped while SKIP_PATIENT_DETAILS_STEP is true; see DoctorProfile resume step */}
-          {!SKIP_PATIENT_DETAILS_STEP && step === 2 && (
+          {step === 2 && (
             <motion.div key="s2" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
               <div className="max-w-3xl mx-auto">
                 {!patientType && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                    <motion.button whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        // Skip civil ID modal — go straight to patient info (step 2 returning)
-                        setNationalId("");
-                        setNationalIdError("");
-                        setVerifiedPersonName(null);
-                        setVerifyOperationId(null);
-                        setVerifyStatusMessage("");
-                        setPatientErrors({});
-                        setPatientName("");
-                        setPatientType("returning");
-                      }}
-                      className="bg-popover rounded-2xl p-8 border border-border text-center transition-all hover:border-primary/40">
-                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <LogIn className="w-7 h-7 text-primary" />
-                      </div>
+                    <motion.button whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} onClick={() => { setNationalId(""); setNationalIdError(""); setVerifiedPersonName(null); setVerifyOperationId(null); setVerifyStatusMessage(""); setPatientErrors({}); setPatientName(""); setPatientType("returning"); openReturningPatientModal(); }} className="bg-popover rounded-2xl p-8 border border-border text-center transition-all hover:border-primary/40">
+                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4"><LogIn className="w-7 h-7 text-primary" /></div>
                       <h3 className="font-serif text-lg text-foreground mb-2">{t("registeredPatient")}</h3>
-                      {/* <p className="font-body text-xs text-muted-foreground">
-                        {isAr ? "سيتم توجيهك إلى بوابة عافيتي" : "You will be redirected to Afiyati Portal"}
-                      </p> */}
-                      <p className="font-body text-xs text-muted-foreground">
-                        {isAr ? "أدخل بياناتك للمتابعة" : "Enter your details to continue"}
-                      </p>
+                      <p className="font-body text-xs text-muted-foreground">{isAr ? "اختر موعدك في الخطوة التالية" : "Choose your appointment time next"}</p>
                     </motion.button>
-                    <motion.button whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}
-                      onClick={() => setPatientType("new")}
-                      className="bg-popover rounded-2xl p-8 border border-border text-center transition-all hover:border-primary/40">
-                      <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                        <UserPlus className="w-7 h-7 text-accent" />
-                      </div>
+                    <motion.button whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} onClick={() => setPatientType("new")} className="bg-popover rounded-2xl p-8 border border-border text-center transition-all hover:border-primary/40">
+                      <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4"><UserPlus className="w-7 h-7 text-accent" /></div>
                       <h3 className="font-serif text-lg text-foreground mb-2">{t("firstTimeVisitor")}</h3>
-                      <p className="font-body text-xs text-muted-foreground">
-                        {isAr ? "سيتم توجيهك إلى نموذج طلب الموعد" : "You will be taken to the Appointment Request Form"}
-                      </p>
+                      <p className="font-body text-xs text-muted-foreground">{isAr ? "سيتم توجيهك إلى نموذج طلب الموعد" : "You will be taken to the Appointment Request Form"}</p>
                     </motion.button>
                   </div>
                 )}
-
                 {patientType === "new" && (
                   <div className="bg-popover rounded-2xl p-5 sm:p-8 md:p-10 border border-border shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                        <ClipboardList className="w-5 h-5 text-accent" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-serif text-foreground">{t("patientDetails")}</h2>
-                        <p className="text-muted-foreground font-body text-xs">{t("provideInfo")}</p>
-                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center"><ClipboardList className="w-5 h-5 text-accent" /></div>
+                      <div><h2 className="text-xl font-serif text-foreground">{t("patientDetails")}</h2><p className="text-muted-foreground font-body text-xs">{t("provideInfo")}</p></div>
                     </div>
                     <div className="space-y-5">
-                      <div>
-                        <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                          {t("fullName")} <span className="text-destructive">*</span>
-                        </label>
-                        <input type="text" value={patientName}
-                          onChange={(e) => { setPatientName(e.target.value); setPatientErrors(prev => ({ ...prev, name: "" })); }}
-                          placeholder={t("enterFullName")}
-                          className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.name ? "border-destructive" : "border-border"}`} />
-                        {patientErrors.name && <p className="font-body text-xs text-destructive mt-1">{patientErrors.name}</p>}
-                      </div>
-                      <div>
-                        <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                          {t("phoneNumber")} <span className="text-destructive">*</span>
-                        </label>
+                      <div><label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">{t("fullName")} <span className="text-destructive">*</span></label><input type="text" value={patientName} onChange={(e) => { setPatientName(e.target.value); setPatientErrors(prev => ({ ...prev, name: "" })); }} placeholder={t("enterFullName")} className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.name ? "border-destructive" : "border-border"}`} />{patientErrors.name && <p className="font-body text-xs text-destructive mt-1">{patientErrors.name}</p>}</div>
+                      <div><label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">{t("phoneNumber")} <span className="text-destructive">*</span></label>
                         <div className="flex gap-2">
-                          <select value={patientCountryCode} onChange={(e) => setPatientCountryCode(e.target.value)}
-                            className="w-24 px-3 py-3 rounded-xl border border-border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30">
-                            <option value="+965">+965</option><option value="+966">+966</option><option value="+971">+971</option>
-                            <option value="+973">+973</option><option value="+968">+968</option><option value="+974">+974</option>
-                            <option value="+20">+20</option><option value="+91">+91</option><option value="+44">+44</option><option value="+1">+1</option>
-                          </select>
-                          <input type="tel" value={patientPhone}
-                            onChange={(e) => { setPatientPhone(e.target.value.replace(/\D/g, "").slice(0, 8)); setPatientErrors(prev => ({ ...prev, phone: "" })); }}
-                            inputMode="numeric"
-                            maxLength={8}
-                            pattern="\d{8}"
-                            placeholder={t("phonePlaceholder")}
-                            className={`flex-1 px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.phone ? "border-destructive" : "border-border"}`} />
-                        </div>
-                        {patientErrors.phone && <p className="font-body text-xs text-destructive mt-1">{patientErrors.phone}</p>}
+                          <select value={patientCountryCode} onChange={(e) => setPatientCountryCode(e.target.value)} className="w-24 px-3 py-3 rounded-xl border border-border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"><option value="+965">+965</option><option value="+966">+966</option><option value="+971">+971</option></select>
+                          <input type="tel" value={patientPhone} onChange={(e) => { setPatientPhone(e.target.value.replace(/\D/g, "").slice(0, 8)); setPatientErrors(prev => ({ ...prev, phone: "" })); }} inputMode="numeric" maxLength={8} pattern="\d{8}" placeholder={t("phonePlaceholder")} className={`flex-1 px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.phone ? "border-destructive" : "border-border"}`} />
+                        </div>{patientErrors.phone && <p className="font-body text-xs text-destructive mt-1">{patientErrors.phone}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            {isAr ? "تاريخ الميلاد" : "Date of Birth"} <span className="text-destructive">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={patientDob}
-                            max={new Date().toISOString().split("T")[0]}
-                            onChange={(e) => { setPatientDob(e.target.value); setPatientErrors(prev => ({ ...prev, dob: "" })); }}
-                            className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.dob ? "border-destructive" : "border-border"}`}
-                          />
-                          {patientErrors.dob && <p className="font-body text-xs text-destructive mt-1">{patientErrors.dob}</p>}
-                        </div>
-                        <div>
-                          <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            {t("gender")} <span className="text-destructive">*</span>
-                          </label>
-                          <select value={patientGender}
-                            onChange={(e) => { setPatientGender(e.target.value); setPatientErrors(prev => ({ ...prev, gender: "" })); }}
-                            className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.gender ? "border-destructive" : "border-border"}`}>
-                            <option value="">{t("selectGender")}</option>
-                            <option value="male">{t("male")}</option>
-                            <option value="female">{t("female")}</option>
-                          </select>
-                          {patientErrors.gender && <p className="font-body text-xs text-destructive mt-1">{patientErrors.gender}</p>}
-                        </div>
+                        <div><label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">{isAr ? "تاريخ الميلاد" : "Date of Birth"} <span className="text-destructive">*</span></label><input type="date" value={patientDob} max={new Date().toISOString().split("T")[0]} onChange={(e) => { setPatientDob(e.target.value); setPatientErrors(prev => ({ ...prev, dob: "" })); }} className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.dob ? "border-destructive" : "border-border"}`} />{patientErrors.dob && <p className="font-body text-xs text-destructive mt-1">{patientErrors.dob}</p>}</div>
+                        <div><label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">{t("gender")} <span className="text-destructive">*</span></label><select value={patientGender} onChange={(e) => { setPatientGender(e.target.value); setPatientErrors(prev => ({ ...prev, gender: "" })); }} className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.gender ? "border-destructive" : "border-border"}`}><option value="">{t("selectGender")}</option><option value="male">{t("male")}</option><option value="female">{t("female")}</option></select>{patientErrors.gender && <p className="font-body text-xs text-destructive mt-1">{patientErrors.gender}</p>}</div>
                       </div>
                     </div>
                   </div>
                 )}
-
-                {patientType === "returning" && (
+                {patientType === "returning" && patientName && (
                   <div className="bg-popover rounded-2xl p-5 sm:p-8 border border-border shadow-sm">
-                    <h2 className="text-xl font-serif text-foreground mb-2">
-                      {isAr ? "تأكيد بيانات المريض" : "Confirm Patient Details"}
-                    </h2>
-                    <p className="font-body text-xs text-muted-foreground mb-4">
-                      {isAr ? "أدخل اسمك الكامل كما هو مسجل في المستشفى." : "Enter your full name as registered with the hospital."}
-                    </p>
-                    <div>
-                      <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                        {t("fullName")} <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={patientName}
-                        onChange={(e) => {
-                          setPatientName(e.target.value);
-                          setPatientErrors((prev) => ({ ...prev, name: "" }));
-                        }}
-                        placeholder={t("enterFullName")}
-                        className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.name ? "border-destructive" : "border-border"}`}
-                      />
-                      {patientErrors.name && <p className="font-body text-xs text-destructive mt-1">{patientErrors.name}</p>}
-                    </div>
+                    <h2 className="text-xl font-serif text-foreground mb-2">{isAr ? "تأكيد بيانات المريض" : "Confirm Patient Details"}</h2>
+                    <p className="font-body text-xs text-muted-foreground mb-4">{isAr ? "أدخل اسمك الكامل كما هو مسجل في المستشفى." : "Enter your full name as registered with the hospital."}</p>
+                    <div><label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">{t("fullName")} <span className="text-destructive">*</span></label><input type="text" value={patientName} onChange={(e) => { setPatientName(e.target.value); setPatientErrors((prev) => ({ ...prev, name: "" })); }} placeholder={t("enterFullName")} className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all ${patientErrors.name ? "border-destructive" : "border-border"}`} />{patientErrors.name && <p className="font-body text-xs text-destructive mt-1">{patientErrors.name}</p>}</div>
                     <div className="mt-5 flex gap-3">
-                      <button
-                        onClick={() => {
-                          if (!patientName.trim()) {
-                            setPatientErrors((prev) => ({
-                              ...prev,
-                              name: isAr ? "الاسم الكامل مطلوب" : "Full name is required",
-                            }));
-                            return;
-                          }
-                          setPatientErrors((prev) => ({ ...prev, name: "" }));
-                          setStep(3);
-                        }}
-                        className="flex-1 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors inline-flex items-center justify-center text-center"
-                      >
-                        {isAr ? "متابعة" : "Proceed"}
-                      </button>
-                      <button
-                        onClick={goToInitialBookingScreen}
-                        className="flex-1 bg-secondary/40 text-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
-                      >
-                        {isAr ? "إلغاء" : "Cancel"}
-                      </button>
+                      <button type="button" onClick={() => { if (!patientName.trim()) { setPatientErrors((prev) => ({ ...prev, name: isAr ? "الاسم الكامل مطلوب" : "Full name is required" })); return; } setPatientErrors((prev) => ({ ...prev, name: "" })); setStep(3); }} className="flex-1 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors inline-flex items-center justify-center text-center">{isAr ? "متابعة" : "Proceed"}</button>
+                      <button type="button" onClick={goToInitialBookingScreen} className="flex-1 bg-secondary/40 text-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center">{isAr ? "إلغاء" : "Cancel"}</button>
                     </div>
                   </div>
                 )}
-
-                {patientType && (
-                  <button
-                    onClick={() => {
-                      setPatientType(null);
-                      setNationalId("");
-                      setNationalIdError("");
-                      setVerifiedPersonName(null);
-                      setVerifyOperationId(null);
-                      setVerifyStatusMessage("");
-                    }}
-                    className="mt-4 font-body text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    ← {t("changeSelection")}
-                  </button>
-                )}
+                {patientType && <button onClick={() => { setPatientType(null); setNationalId(""); setNationalIdError(""); setVerifiedPersonName(null); setVerifyOperationId(null); setVerifyStatusMessage(""); }} className="mt-4 font-body text-xs text-muted-foreground hover:text-foreground transition-colors">← {t("changeSelection")}</button>}
               </div>
             </motion.div>
           )}
 
-          {/* STEP 3: TIME SLOTS */}
           {step === 3 && (
             <motion.div key="s3" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
               <div className="max-w-3xl mx-auto">
                 <div className="bg-popover rounded-2xl p-6 md:p-8 border border-border shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-accent" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-serif text-foreground">{isAr ? "اختر الموعد" : "Select Date & Time"}</h2>
-                      <p className="text-muted-foreground font-body text-xs">{isAr ? "اختر التاريخ والوقت المناسب لك" : "Pick a date and available time slot"}</p>
-                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center"><Calendar className="w-5 h-5 text-accent" /></div>
+                    <div><h2 className="text-xl font-serif text-foreground">{isAr ? "اختر الموعد" : "Select Date & Time"}</h2><p className="text-muted-foreground font-body text-xs">{isAr ? "اختر التاريخ والوقت المناسب لك" : "Pick a date and available time slot"}</p></div>
                   </div>
-
+                  {specialityCode && providerCode && (
+                    <div className="flex gap-4 mb-4 text-[10px] font-mono text-muted-foreground/60 uppercase tracking-tight">
+                      <span>Speciality: {specialityCode}</span>
+                      <span>Provider: {providerCode}</span>
+                    </div>
+                  )}
                   <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-3">{isAr ? "التاريخ" : "Date"}</p>
                   <div className="flex gap-2 flex-wrap justify-center mb-8">
                     {availableDates.map((d) => (
-                      <button key={d.value} onClick={() => { setSelectedDate(d.value); setSelectedSlot(null); }}
-                        className={`px-4 py-2.5 rounded-xl border font-body text-xs transition-all ${selectedDate === d.value
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-background border-border text-foreground hover:border-accent/50"}`}>
-                        {d.label}
-                      </button>
+                      <button key={d.value} onClick={() => { setSelectedDate(d.value); setSelectedSlot(null); }} className={`px-4 py-2.5 rounded-xl border font-body text-xs transition-all ${selectedDate === d.value ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background border-border text-foreground hover:border-accent/50"}`}>{d.label}</button>
                     ))}
                   </div>
 
-                  {selectedDate && (
-                    <>
-                      <p className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-3">{isAr ? "الوقت المتاح" : "Available Times"}</p>
-                      <div className="mb-3">
-                        <p className="font-body text-[10px] text-accent uppercase tracking-widest mb-2">{isAr ? "صباحاً" : "Morning"}</p>
-                        <div className="flex flex-wrap justify-center gap-2 mb-5">
-                          {timeSlots.filter(s => parseInt(s) < 13).map((slot) => (
-                            <button key={slot} onClick={() => { setSelectedSlot(slot); setStep(4); }}
-                              className={`px-4 py-2.5 rounded-xl border font-body text-xs transition-all ${selectedSlot === slot
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background border-border text-foreground hover:border-accent/50"}`}>
-                              {formatSlot(slot)}
-                            </button>
-                          ))}
+                  {isLoadingSlots && <div className="flex flex-col items-center justify-center py-12"><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="w-10 h-10 rounded-full border-2 border-accent/20 border-t-accent mb-4" /><p className="font-body text-sm text-muted-foreground">{isAr ? "جارِ جلب المواعيد المتاحة..." : "Fetching available time slots..."}</p></div>}
+
+                  {!isLoadingSlots && selectedDate && fetchedSlots.length > 0 && (
+                    <div className="space-y-6">
+                      {Object.entries(slotsByPeriod).map(([period, slots]) => slots.length > 0 && (
+                        <div key={period}>
+                          <h3 className="font-body text-sm font-medium text-foreground mb-3 capitalize">{period}</h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {slots.map((slot) => (
+                              <button key={slot.slot_booking_id || slot.slot_from_time} onClick={() => { setSelectedSlot(slot.slot_from_time); setSelectedSlotId(slot.slot_booking_id); setStep(4); }} className={`p-4 rounded-xl border text-sm font-body transition-all text-center ${selectedSlot === slot.slot_from_time ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-background border-border hover:border-accent/40 hover:bg-accent/5 text-foreground"}`}>{formatSlotRange(slot)}</button>
+                            ))}
+                          </div>
                         </div>
-                        <p className="font-body text-[10px] text-accent uppercase tracking-widest mb-2">{isAr ? "مساءً" : "Afternoon"}</p>
-                        <div className="flex flex-wrap justify-center gap-2">
-                          {timeSlots.filter(s => parseInt(s) >= 14).map((slot) => (
-                            <button key={slot} onClick={() => { setSelectedSlot(slot); setStep(4); }}
-                              className={`px-4 py-2.5 rounded-xl border font-body text-xs transition-all ${selectedSlot === slot
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background border-border text-foreground hover:border-accent/50"}`}>
-                              {formatSlot(slot)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
+                      ))}
+                    </div>
                   )}
 
-                  {!selectedDate && (
-                    <div className="text-center py-8 text-muted-foreground font-body text-sm">
-                      <Clock className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      {isAr ? "اختر تاريخاً لعرض المواعيد المتاحة" : "Select a date to see available time slots"}
-                    </div>
+                  {!isLoadingSlots && selectedDate && fetchedSlots.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground font-body text-sm bg-muted/20 rounded-2xl border border-dashed border-border"><AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />{isAr ? "لا توجد مواعيد متاحة لهذا اليوم" : "No available appointments for this date"}</div>
                   )}
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 4: CONFIRM */}
           {step === 4 && (
-            <motion.div key="s3" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
+            <motion.div key="s4" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
               <div className="max-w-3xl mx-auto">
                 <div className="bg-popover rounded-2xl p-8 md:p-10 border border-border shadow-sm">
-                  <h2 className="font-serif text-xl text-foreground mb-2">
-                    {isRequestMode ? t("reviewSubmit") : t("reviewConfirm")}
-                  </h2>
-                  {isRequestMode && (
-                    <div className="bg-accent/5 border border-accent/10 rounded-xl p-4 mb-6">
-                      <p className="font-body text-sm text-accent font-medium">{t("appointmentRequest")}</p>
-                      <p className="font-body text-xs text-muted-foreground">{t("requestNote")}</p>
-                    </div>
-                  )}
+                  <h2 className="font-serif text-xl text-foreground mb-2">{isRequestMode ? t("reviewSubmit") : t("reviewConfirm")}</h2>
                   <div className="space-y-5">
                     {[
                       { label: t("department"), value: selectedDeptObj?.name || selectedDoctorObj?.specialty || "", icon: Building2 },
                       { label: t("doctor"), value: selectedDoctorObj?.name || "", icon: User },
-                      { label: isAr ? "التاريخ والوقت" : "Date & Time", value: selectedDate && selectedSlot ? `${formattedSelectedDate}  •  ${formatSlot(selectedSlot)}` : "", icon: Clock },
+                      { label: isAr ? "التاريخ والوقت" : "Date & Time", value: selectedDate && selectedSlot ? `${formattedSelectedDate}  •  ${formatTimeString(selectedSlot)}` : "", icon: Clock },
                       { label: t("patient"), value: patientName.trim() || "—", icon: ClipboardList },
-                      ...(patientType === "new"
-                        ? [
-                            { label: t("phone"), value: `${patientCountryCode} ${patientPhone}`, icon: Stethoscope },
-                            { label: isAr ? "تاريخ الميلاد" : "Date of Birth", value: formattedDob, icon: User },
-                            { label: t("gender"), value: patientGender === "male" ? t("male") : t("female"), icon: User },
-                          ]
-                        : [])
+                      ...(patientType === "new" ? [{ label: t("phone"), value: `${patientCountryCode} ${patientPhone}`, icon: Stethoscope }, { label: isAr ? "تاريخ الميلاد" : "Date of Birth", value: formattedDob, icon: User }, { label: t("gender"), value: patientGender === "male" ? t("male") : t("female"), icon: User }] : [])
                     ].map((row) => (
-                      <div key={row.label} className="flex items-start gap-4 py-3 border-b border-border last:border-0">
-                        <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                          <row.icon className="w-4 h-4 text-accent" />
-                        </div>
-                        <div>
-                          <p className="font-body text-xs text-muted-foreground uppercase tracking-wider">{row.label}</p>
-                          <p className="font-body text-sm text-foreground font-medium">{row.value}</p>
-                        </div>
-                      </div>
+                      <div key={row.label} className="flex items-start gap-4 py-3 border-b border-border last:border-0"><div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0"><row.icon className="w-4 h-4 text-accent" /></div><div><p className="font-body text-xs text-muted-foreground uppercase tracking-wider">{row.label}</p><p className="font-body text-sm text-foreground font-medium">{row.value}</p></div></div>
                     ))}
+                  </div>
+                  {bookingError && <div className="mt-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3"><AlertCircle className="w-5 h-5 text-destructive" /><p className="font-body text-sm text-destructive">{bookingError}</p></div>}
+                  <div className="mt-8 flex flex-col gap-4">
+                    <motion.button whileHover={!isSubmitting ? { scale: 1.02 } : {}} whileTap={!isSubmitting ? { scale: 0.98 } : {}} onClick={handleConfirm} disabled={isSubmitting} className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-body text-sm tracking-widest uppercase hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70">
+                      {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" />{isAr ? "جارِ الإرسال..." : "Submitting..."}</> : <>{isRequestMode ? t("submitRequest") : t("confirmBooking")}</>}
+                    </motion.button>
                   </div>
                 </div>
               </div>
@@ -1323,157 +1256,39 @@ const BookAppointment = () => {
           )}
         </AnimatePresence>
 
-        {/* Navigation Buttons */}
         <div className="max-w-3xl mx-auto flex items-center justify-between mt-6 md:mt-8 gap-3">
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            onClick={handleBack}
-            className="flex items-center gap-1.5 text-muted-foreground font-body text-xs sm:text-sm hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            {step === 0 ? t("backToHome") : t("previous")}
-          </motion.button>
-          {step >= 2 && !(step === 2 && !patientType) && !(step === 2 && patientType === "returning") && step !== 3 && (
-            <motion.button
-              whileHover={canProceed() ? { scale: 1.03 } : {}}
-              whileTap={canProceed() ? { scale: 0.97 } : {}}
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className={`flex items-center gap-1.5 px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-body text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 ${canProceed()
-                ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
-                }`}>
-              {step === 4 ? (
-                <><CheckCircle2 className="w-4 h-4" />{isRequestMode ? t("submitRequest") : t("confirmBooking")}</>
-              ) : (
-                <>{t("continue")} <ArrowRight className="w-4 h-4" /></>
-              )}
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleBack} className="flex items-center gap-1.5 text-muted-foreground font-body text-xs sm:text-sm hover:text-foreground transition-colors"><ArrowLeft className="w-4 h-4" />{step === 0 ? t("backToHome") : t("previous")}</motion.button>
+          {step >= 2 && !(step === 2 && !patientType) && !(step === 2 && patientType === "returning") && step !== 3 && step !== 4 && (
+            <motion.button whileHover={canProceed() ? { scale: 1.03 } : {}} whileTap={canProceed() ? { scale: 0.97 } : {}} onClick={handleNext} disabled={!canProceed()} className={`flex items-center gap-1.5 px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-body text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 ${canProceed() ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
+              {t("continue")} <ArrowRight className="w-4 h-4" />
             </motion.button>
           )}
         </div>
       </div>
-      {false /* TEMP: civil ID modal — use `showReturningPatientModal &&` when restoring */ && showReturningPatientModal && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/40 backdrop-blur-sm p-4"
-          onClick={() => setShowReturningPatientModal(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-xl rounded-3xl border border-border/70 bg-popover shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
+      {showReturningPatientModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/40 backdrop-blur-sm p-4" onClick={() => setShowReturningPatientModal(false)}>
+          <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-xl rounded-3xl border border-border/70 bg-popover shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-border/60 bg-gradient-to-r from-primary/5 to-accent/5">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-body text-[10px] tracking-[0.18em] uppercase text-accent mb-1">
-                    {isAr ? "مريض مسجل" : "Registered Patient"}
-                  </p>
-                  <h3 className="font-serif text-xl text-foreground">
-                    {isAr ? "التحقق من الرقم المدني" : "Kuwait Civil ID Verification"}
-                  </h3>
-                  <p className="font-body text-xs text-muted-foreground mt-1">
-                    {isAr
-                      ? "أدخل الرقم المدني لإحضار الاسم ومتابعة الحجز."
-                      : "Please enter your Kuwait Civil ID to retrieve your details and continue booking."}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowReturningPatientModal(false)}
-                  className="w-8 h-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-colors"
-                  aria-label={isAr ? "إغلاق" : "Close"}
-                >
-                  ×
-                </button>
+                <div><p className="font-body text-[10px] tracking-[0.18em] uppercase text-accent mb-1">{isAr ? "مريض مسجل" : "Registered Patient"}</p><h3 className="font-serif text-xl text-foreground">{isAr ? "التحقق من الرقم المدني" : "Kuwait Civil ID Verification"}</h3><p className="font-body text-xs text-muted-foreground mt-1">{isAr ? "أدخل الرقم المدني لإحضار الاسم ومتابعة الحجز." : "Please enter your Kuwait Civil ID to retrieve your details and continue booking."}</p></div>
+                <button onClick={() => setShowReturningPatientModal(false)} className="w-8 h-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/70 transition-colors" aria-label={isAr ? "إغلاق" : "Close"}>×</button>
               </div>
             </div>
-
             <div className="p-6">
               <div className="rounded-2xl border border-border/70 bg-background/50 p-4">
-                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  {isAr ? "الرقم المدني" : "National ID"} <span className="text-destructive">*</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={nationalId}
-                  onChange={(e) => {
-                    setNationalId(e.target.value.replace(/\D/g, "").slice(0, 12));
-                    setNationalIdError("");
-                    setVerifiedPersonName(null);
-                  }}
-                  placeholder={isAr ? "ادخل 12 رقم" : "Enter 12 digits"}
-                  className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${nationalIdError ? "border-destructive" : "border-border"}`}
-                />
+                <label className="font-body text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">{isAr ? "الرقم المدني" : "National ID"} <span className="text-destructive">*</span></label>
+                <input type="text" inputMode="numeric" value={nationalId} onChange={(e) => { setNationalId(e.target.value.replace(/\D/g, "").slice(0, 12)); setNationalIdError(""); setVerifiedPersonName(null); }} placeholder={isAr ? "ادخل 12 رقم" : "Enter 12 digits"} className={`w-full px-4 py-3 rounded-xl border bg-background font-body text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/30 ${nationalIdError ? "border-destructive" : "border-border"}`} />
                 {nationalIdError && <p className="font-body text-xs text-destructive mt-2">{nationalIdError}</p>}
               </div>
-
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={handleNationalIdVerify}
-                  disabled={isVerifyingNationalId}
-                  className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center"
-                >
-                  {isVerifyingNationalId ? (isAr ? "جارِ الفحص..." : "Verifying...") : (isAr ? "تحقق" : "Verify")}
-                </button>
+                <button onClick={handleNationalIdVerify} disabled={isVerifyingNationalId} className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center">{isVerifyingNationalId ? (isAr ? "جارِ الفحص..." : "Verifying...") : (isAr ? "تحقق" : "Verify")}</button>
                 {verifyOperationId ? (
-                  <button
-                    onClick={handleCheckApproval}
-                    disabled={isCheckingApproval || isVerifyingNationalId}
-                    className="w-full bg-secondary/50 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/70 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center"
-                  >
-                    {isCheckingApproval
-                      ? (isAr ? "جارِ التحقق..." : "Checking...")
-                      : (isAr ? "تحقق من الموافقة" : "Check Approval")}
-                  </button>
+                  <button onClick={handleCheckApproval} disabled={isCheckingApproval || isVerifyingNationalId} className="w-full bg-secondary/50 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/70 transition-colors disabled:opacity-70 inline-flex items-center justify-center text-center">{isCheckingApproval ? (isAr ? "جارِ التحقق..." : "Checking...") : (isAr ? "تحقق من الموافقة" : "Check Approval")}</button>
                 ) : (
-                  <button
-                    onClick={goToInitialBookingScreen}
-                    className="w-full bg-secondary/40 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
-                  >
-                    {isAr ? "إلغاء" : "Cancel"}
-                  </button>
+                  <button onClick={goToInitialBookingScreen} className="w-full bg-secondary/40 text-foreground px-4 py-3 rounded-xl font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center">{isAr ? "إلغاء" : "Cancel"}</button>
                 )}
               </div>
-
-              {verifyStatusMessage && (
-                <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
-                  <p className="font-body text-xs text-foreground">{verifyStatusMessage}</p>
-                </div>
-              )}
-
-              {verifiedPersonName && (
-                <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
-                  <p className="font-body text-sm text-foreground">
-                    {isAr ? "تم التحقق بنجاح" : "Verified successfully"}
-                  </p>
-                  <p className="font-body text-xs text-muted-foreground mt-1">
-                    {isAr ? "الحجز باسم" : "Booking for"}{" "}
-                    <span className="text-foreground font-medium">
-                      {isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic)}
-                    </span>
-                  </p>
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() => {
-                        const pickedName = isAr ? (verifiedPersonName.arabic || verifiedPersonName.english) : (verifiedPersonName.english || verifiedPersonName.arabic);
-                        setPatientName(pickedName);
-                        setPatientType("returning");
-                        setShowReturningPatientModal(false);
-                        setVerifyOperationId(null);
-                        setVerifyStatusMessage("");
-                      }}
-                      className="flex-1 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-primary/90 transition-colors inline-flex items-center justify-center text-center"
-                    >
-                      {isAr ? "متابعة" : "Proceed"}
-                    </button>
-                    <button
-                      onClick={goToInitialBookingScreen}
-                      className="flex-1 bg-secondary/40 text-foreground px-3 py-2.5 rounded-lg font-body text-xs tracking-widest uppercase hover:bg-secondary/60 transition-colors inline-flex items-center justify-center text-center"
-                    >
-                      {isAr ? "إلغاء" : "Cancel"}
-                    </button>
-                  </div>
-                </div>
-              )}
+              {verifyStatusMessage && <div className="mt-4 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3"><p className="font-body text-xs text-foreground">{verifyStatusMessage}</p></div>}
             </div>
           </motion.div>
         </div>
