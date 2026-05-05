@@ -1,15 +1,11 @@
 import api from "./axiosInstance";
 
 export type CreateAppointmentRequestPayload = {
-  fullName: string;
+  fullname: string;
   phone: string;
-  dateOfBirth: string;
-  gender: "male" | "female" | "other";
-  preferredDate: string;
-  timeSlot: {
-    period: "morning" | "afternoon";
-    time: string;
-  };
+  dateOfBirth?: string;
+  age?: number;
+  gender?: "male" | "female" | "other";
   additionalNotes?: string;
 };
 

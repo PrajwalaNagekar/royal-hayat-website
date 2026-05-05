@@ -7,16 +7,20 @@ import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getDoctorDepartmentIds, getDoctorsByDepartment, mapApiDoctorRowToDoctor } from "@/api/doctors";
+import { getAllDepartments } from "@/api/department";
 import type { Doctor } from "@/data/doctors";
-import type { Doctor } from "@/data/doctors";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  getDoctorDepartmentIds,
-  getDoctorsByDepartment,
-  mapApiDoctorRowToDoctor,
-} from "@/api/doctors";
-import { getAllDepartments } from "@/api/department";
+// import type { Doctor } from "@/data/doctors";
+// import { Input } from "@/components/ui/input";
+// import { Skeleton } from "@/components/ui/skeleton";
+// import {
+//   getDoctorDepartmentIds,
+//   getDoctorsByDepartment,
+//   mapApiDoctorRowToDoctor,
+// } from "@/api/doctors";
+// import { getAllDepartments } from "@/api/department";
 
 type DepartmentDoctorGroup = {
   departmentId: string;
@@ -24,20 +28,20 @@ type DepartmentDoctorGroup = {
   departmentAr: string;
   doctors: Doctor[];
 };
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  getDoctorDepartmentIds,
-  getDoctorsByDepartment,
-  mapApiDoctorRowToDoctor,
-} from "@/api/doctors";
-import { getAllDepartments } from "@/api/department";
+// import { Skeleton } from "@/components/ui/skeleton";
+// import {
+//   getDoctorDepartmentIds,
+//   getDoctorsByDepartment,
+//   mapApiDoctorRowToDoctor,
+// } from "@/api/doctors";
+// import { getAllDepartments } from "@/api/department";
 
-type DepartmentDoctorGroup = {
-  departmentId: string;
-  department: string;
-  departmentAr: string;
-  doctors: Doctor[];
-};
+// type DepartmentDoctorGroup = {
+//   departmentId: string;
+//   department: string;
+//   departmentAr: string;
+//   doctors: Doctor[];
+// };
 
 const DoctorCard = ({ doc }: { doc: Doctor }) => {
   const { lang } = useLanguage();

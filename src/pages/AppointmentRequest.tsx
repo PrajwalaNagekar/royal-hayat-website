@@ -8,6 +8,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { doctors as allDoctors } from "@/data/doctors";
+import { createAppointmentRequest } from "@/api/appointmentRequest";
 
 const AppointmentRequest = () => {
   const { lang, t } = useLanguage();
@@ -15,6 +16,8 @@ const AppointmentRequest = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const returnState = (location.state as any) ?? {};
 
@@ -40,9 +43,44 @@ const AppointmentRequest = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const calculateAge = (dob: string): number | undefined => {
+    if (!dob) return undefined;
+    const birthDate = new Date(dob);
+    if (Number.isNaN(birthDate.getTime())) return undefined;
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age -= 1;
+    }
+    return age >= 0 ? age : undefined;
+  };
+
+  const handleSubmit = async () => {
     if (!validate()) return;
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setSubmitError("");
+    try {
+      const formattedPhone = `${form.countryCode}${form.phone}`.replace(/\s+/g, "");
+      await createAppointmentRequest({
+        fullname: form.fullName.trim(),
+        phone: formattedPhone,
+        dateOfBirth: form.dateOfBirth || undefined,
+        age: calculateAge(form.dateOfBirth),
+        gender: form.gender ? (form.gender as "male" | "female") : undefined,
+        additionalNotes: form.message.trim() || undefined,
+      });
+      setSubmitted(true);
+    } catch {
+      setSubmitError(
+        lang === "ar"
+          ? "تعذر إرسال الطلب الآن. يرجى المحاولة مرة أخرى."
+          : "Could not submit your request right now. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -240,9 +278,16 @@ const AppointmentRequest = () => {
             </div>
           </div>
 
+          {submitError && (
+            <p className="font-body text-sm text-destructive mt-4">{submitError}</p>
+          )}
+
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSubmit}
+            disabled={isSubmitting}
             className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-xl font-body text-sm tracking-widest uppercase hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-            {lang === "ar" ? "إرسال الطلب" : "Submit Request"} <ArrowRight className="w-4 h-4" />
+            {isSubmitting
+              ? (lang === "ar" ? "جاري الإرسال..." : "Submitting...")
+              : (lang === "ar" ? "إرسال الطلب" : "Submit Request")} <ArrowRight className="w-4 h-4" />
           </motion.button>
         </motion.div>
       </div>
