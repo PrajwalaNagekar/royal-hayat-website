@@ -748,6 +748,17 @@ const BookAppointment = () => {
                     <p className="text-foreground font-medium">{patientName}</p>
                   </div>
                 </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-accent mt-0.5" />
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">{isAr ? "الموعد" : "Time Slot"}</p>
+                    <p className="text-foreground font-medium">
+                      {selectedDate && selectedSlot ? (
+                        `${formattedSelectedDate} • ${formatTimeString(selectedSlot)}`
+                      ) : "—"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </motion.div>
 
