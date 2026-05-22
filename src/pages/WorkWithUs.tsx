@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 type Position = {
   id: string;
+  _id: string;        // MongoDB _id — used for the apply link
   title: string;
   category: string;
   location: string;
@@ -52,9 +53,16 @@ const WorkWithUs = ({
   const { lang } = useLanguage();
   const isAr = lang === "ar";
   const [activeCategory, setActiveCategory] = useState("View All");
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [jobsLoading, setJobsLoading] = useState(true);
-  const [jobsError, setJobsError] = useState(false);
+  const [positions, setPositions] = useState<Position[]>(
+    openPositions.map((p, index) => ({
+      id: String(index),
+      title: p.title,
+      category: p.category,
+      location: p.location,
+      type: p.type,
+      desc: p.desc,
+    }))
+  );
   const categoriesScrollRef = useRef<HTMLDivElement | null>(null);
   const [searchParams] = useSearchParams();
   const section = searchParams.get("section");
@@ -305,9 +313,12 @@ const WorkWithUs = ({
                 className="bg-popover border border-border/50 rounded-2xl overflow-hidden"
               >
                 <div className="flex flex-col md:flex-row">
-                  <div className="md:w-64 flex-shrink-0 bg-primary/5 flex items-center justify-center p-8 md:p-10">
-                    {/* Placeholder image area intentionally kept blank */}
-                    <div className="w-44 h-44 md:w-60 md:h-60 rounded-2xl border-4 border-primary/20 bg-primary/10" />
+                  <div className="md:w-96 flex-shrink-0 bg-primary/5 p-6 flex items-center justify-center">
+                    <img
+                      src="https://royal-hayat.s3.eu-central-1.amazonaws.com/employee-of-the-month/ranga-tara.jpeg"
+                      alt="Rangaa Tara Mahawan"
+                      className="w-full h-[400px ] object-cover rounded-2xl"
+                    />
                   </div>
 
                   <div className="flex-1 p-6 md:p-8">
@@ -470,60 +481,58 @@ const WorkWithUs = ({
                   </button>
                 </div>
 
-                {filtered.length === 0 ? (
-                  <div className="max-w-2xl mx-auto text-center py-16">
-                    <p className="text-muted-foreground font-body text-sm">
-                      {isAr
-                        ? "لا توجد وظائف مفتوحة حاليًا. تابعنا قريبًا أو أرسل سيرتك الذاتية إلى الموارد البشرية."
-                        : "There are no open positions at the moment. Check back soon or send your CV to HR."}
-                    </p>
+            {/* Job cards */}
+            <div className="max-w-5xl mx-auto space-y-5">
+              {positionsLoading ? (
+                // Loading skeleton
+                [...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8 animate-pulse">
+                    <div className="h-5 bg-muted rounded w-2/3 mb-3" />
+                    <div className="h-3 bg-muted rounded w-1/4 mb-4" />
+                    <div className="h-3 bg-muted rounded w-full" />
                   </div>
-                ) : (
-                  <div className="max-w-5xl mx-auto space-y-5">
-                    {filtered.map((pos) => (
-                      <motion.div
-                        key={pos.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.4 }}
-                        className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8 hover:shadow-lg transition-shadow"
-                      >
-                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="font-serif text-lg md:text-xl text-foreground mb-2">{pos.title}</h3>
-                            <div className="flex flex-wrap items-center gap-2 mb-3">
-                              <span className="inline-block px-3 py-1 bg-secondary/30 text-foreground text-[11px] font-body rounded tracking-wide">
-                                {pos.category.toUpperCase()}
-                              </span>
-                            </div>
-                            <p className="font-body text-sm text-muted-foreground leading-relaxed">
-                              {pos.desc || (isAr ? "انقر للتقديم لمعرفة المزيد." : "Apply to learn more about this role.")}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                            <Link
-                              to={`/job-application?jobId=${encodeURIComponent(pos.id)}`}
-                              className="inline-flex items-center gap-1 text-accent font-body text-sm font-semibold hover:underline"
-                            >
-                              {isAr ? "تقدم الآن" : "Apply Now"} <ArrowUpRight className="w-4 h-4" />
-                            </Link>
-                            <div className="flex items-center gap-4 text-xs font-body text-muted-foreground">
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5" /> {pos.location.toUpperCase()}
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" /> {pos.type.toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
+                ))
+              ) : (
+                filtered.map((pos) => (
+                  <motion.div
+                    key={pos._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4 }}
+                    className="bg-popover border border-border/50 rounded-2xl p-6 md:p-8 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-serif text-lg md:text-xl text-foreground mb-2">{pos.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <span className="inline-block px-3 py-1 bg-secondary/30 text-foreground text-[11px] font-body rounded tracking-wide">
+                            {pos.category.toUpperCase()}
+                          </span>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+                        <p className="font-body text-sm text-muted-foreground leading-relaxed">{pos.desc}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                        <Link
+                          to={`/job-application?job=${pos._id}`}
+                          className="inline-flex items-center gap-1 text-accent font-body text-sm font-semibold hover:underline"
+                        >
+                          {isAr ? "تقدم الآن" : "Apply Now"} <ArrowUpRight className="w-4 h-4" />
+                        </Link>
+                        <div className="flex items-center gap-4 text-xs font-body text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5" /> {pos.location.toUpperCase()}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> {pos.type.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
 
             <div className="text-center mt-10">
               <p className="font-body text-sm text-muted-foreground">

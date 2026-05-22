@@ -1,9 +1,13 @@
 import { Star } from "lucide-react";
 import { motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import ScrollAnimationWrapper from "./ScrollAnimationWrapper";
 import { useLanguage } from "@/contexts/LanguageContext";
-
+import {
+  createHospitalFeedback,
+  getArabicHospitalFeedbacks,
+  getEnglishHospitalFeedbacks,
+} from "@/api/feedback";
 const testimonials = [
   {
     stars: 5,
@@ -49,7 +53,134 @@ const TestimonialsSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const { lang, t } = useLanguage();
+  const [hospitalFeedbacks, setHospitalFeedbacks] = useState<any[]>([]);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
+  const [feedbackForm, setFeedbackForm] = useState({
+    name: "",
+    feedback: "",
+    stars: 0,
+  });
+
+  useEffect(() => {
+
+    const fetchFeedbacks = async () => {
+
+      try {
+
+        setLoadingFeedbacks(true);
+
+        const response =
+          lang === "ar"
+            ? await getArabicHospitalFeedbacks()
+            : await getEnglishHospitalFeedbacks();
+
+        const feedbacks = response?.data || [];
+
+        const formattedFeedbacks = feedbacks.map((item: any) => ({
+          stars: item.stars,
+          text: item.feedback,
+          textAr: item.arabicFeedback,
+          name: item.userName,
+          nameAr: item.arabicUserName,
+        }));
+
+        setHospitalFeedbacks(
+          formattedFeedbacks.length
+            ? formattedFeedbacks
+            : testimonials
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        setHospitalFeedbacks(testimonials);
+
+      } finally {
+
+        setLoadingFeedbacks(false);
+      }
+    };
+
+    fetchFeedbacks();
+
+  }, [lang]);
+  const handleAddFeedback = async () => {
+
+    if (!feedbackForm.name || !feedbackForm.feedback) {
+      return;
+    }
+
+    try {
+
+      setSubmittingFeedback(true);
+
+      const payload =
+        lang === "ar"
+          ? {
+            arabicUserName: feedbackForm.name,
+            arabicFeedback: feedbackForm.feedback,
+            stars: feedbackForm.stars || 5,
+          }
+          : {
+            userName: feedbackForm.name,
+            feedback: feedbackForm.feedback,
+            stars: feedbackForm.stars || 5,
+          };
+
+      await createHospitalFeedback(payload);
+
+      const newFeedback = {
+        stars: feedbackForm.stars || 5,
+        text:
+          lang === "en"
+            ? feedbackForm.feedback
+            : "",
+        textAr:
+          lang === "ar"
+            ? feedbackForm.feedback
+            : "",
+        name:
+          lang === "en"
+            ? feedbackForm.name
+            : "",
+        nameAr:
+          lang === "ar"
+            ? feedbackForm.name
+            : "",
+      };
+
+      setHospitalFeedbacks((prev) => [
+        newFeedback,
+        ...prev,
+      ]);
+
+      setFeedbackForm({
+        name: "",
+        feedback: "",
+        stars: 5,
+      });
+
+      setShowThankYou(true);
+
+      setTimeout(() => {
+        setShowThankYou(false);
+        setIsFeedbackOpen(false);
+      }, 2000);
+
+    } catch (error) {
+
+      console.error(error);
+
+    } finally {
+
+      setSubmittingFeedback(false);
+    }
+  };
   return (
     <section className="py-24 bg-popover overflow-hidden">
       <div className="container mx-auto px-6">
@@ -80,6 +211,292 @@ const TestimonialsSection = () => {
           ))}
         </motion.div>
       </div>
+      {isFeedbackOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="
+  bg-background/95
+  backdrop-blur-xl
+  w-full
+  max-w-md
+  rounded-3xl
+  border
+  border-border/50
+  shadow-[0_25px_80px_rgba(0,0,0,0.25)]
+  p-5
+  sm:p-6
+  relative
+  max-h-[90vh]
+  overflow-y-auto
+"
+          >
+            {/* Close */}
+            <button
+              onClick={() => setIsFeedbackOpen(false)}
+              className="absolute top-5 right-5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-">
+              <div className="w-16 h-16 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <MessageCircleHeart className="w-8 h-8 text-primary drop-shadow-sm" />
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-serif text-foreground mb-1">
+                {lang === "ar" ? "إضافة تقييم" : "Add Feedback"}
+              </h2>
+
+              <p className="text-muted-foreground text-sm font-body">
+                {lang === "ar"
+                  ? "شارك تجربتك مع المستشفى"
+                  : "Share your experience with the hospital"}
+              </p>
+            </div>
+
+            {/* Name */}
+            <div className="mb-4">
+              <label className="block mb-2 text-sm font-medium">
+                {lang === "ar" ? "الاسم" : "Your Name"}
+              </label>
+
+              <input
+                type="text"
+                value={feedbackForm.name}
+                onChange={(e) =>
+                  setFeedbackForm({
+                    ...feedbackForm,
+                    name: e.target.value,
+                  })
+                }
+                placeholder={
+                  lang === "ar" ? "أدخل اسمك" : "Enter your name"
+                }
+                className="
+            w-full
+            rounded-2xl
+            border
+            border-border/60
+            bg-secondary/20
+            px-5
+            py-4
+            outline-none
+            transition-all
+            duration-300
+            focus:border-primary
+            focus:ring-4
+            focus:ring-primary/10
+          "
+              />
+            </div>
+
+            {/* Feedback */}
+            <div className="mb-4">
+              <label className="block mb-2 text-sm font-medium">
+                {lang === "ar" ? "التقييم" : "Feedback"}
+              </label>
+
+              <textarea
+                rows={3}
+                value={feedbackForm.feedback}
+                onChange={(e) =>
+                  setFeedbackForm({
+                    ...feedbackForm,
+                    feedback: e.target.value,
+                  })
+                }
+                placeholder={
+                  lang === "ar"
+                    ? "اكتب تجربتك مع المستشفى"
+                    : "Write your experience with the hospital"
+                }
+                className="
+            w-full
+            rounded-2xl
+            border
+            border-border/60
+            bg-secondary/20
+            px-5
+            py-4
+            outline-none
+            resize-none
+            transition-all
+            duration-300
+            focus:border-primary
+            focus:ring-4
+            focus:ring-primary/10
+          "
+              />
+            </div>
+
+            {/* Stars */}
+            <div className="mb-8">
+              <label className="block mb-3 text-sm font-medium text-center">
+                {lang === "ar" ? "التقييم بالنجوم" : "Star Rating"}
+              </label>
+
+              <div className="flex items-center justify-center gap-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <motion.button
+                    key={index}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button"
+                    onClick={() =>
+                      setFeedbackForm({
+                        ...feedbackForm,
+                        stars: index + 1,
+                      })
+                    }
+                  >
+                    <Star
+                      className={`w-8 h-8 transition-all duration-300 ${index < feedbackForm.stars
+                        ? "fill-yellow-400 text-yellow-400 drop-shadow-md"
+                        : "text-border"
+                        }`}
+                    />
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddFeedback}
+              disabled={submittingFeedback}
+              className="
+          w-full
+          bg-primary
+          text-primary-foreground
+          py-4
+          rounded-2xl
+          font-semibold
+          text-sm
+          tracking-wide
+          shadow-lg
+          hover:shadow-xl
+          hover:bg-primary/90
+          transition-all
+          duration-300
+          flex
+          items-center
+          justify-center
+          gap-2
+        "
+            >
+              <Star className="w-4 h-4 fill-current" />
+
+              {submittingFeedback
+                ? (lang === "ar"
+                  ? "جاري الإرسال..."
+                  : "Submitting...")
+                : (lang === "ar"
+                  ? "إرسال التقييم"
+                  : "Submit Feedback")
+              }
+            </motion.button>
+            {showThankYou && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  duration: 0.4,
+                  type: "spring",
+                  stiffness: 180,
+                }}
+                className="
+      absolute
+      inset-0
+      z-50
+      flex
+      items-center
+      justify-center
+      rounded-3xl
+      bg-background/90
+      backdrop-blur-md
+      px-6
+    "
+              >
+                <div
+                  className="
+        flex
+        items-center
+        gap-4
+        rounded-2xl
+        border
+        border-primary/20
+        bg-primary/10
+        px-6
+        py-5
+        shadow-2xl
+      "
+                >
+                  {/* Animated Icon */}
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{
+                      delay: 0.15,
+                      type: "spring",
+                      stiffness: 260,
+                    }}
+                    className="
+          w-12
+          h-12
+          rounded-full
+          bg-primary/15
+          border
+          border-primary/20
+          flex
+          items-center
+          justify-center
+        "
+                  >
+                    <MessageCircleHeart className="w-6 h-6 text-primary" />
+                  </motion.div>
+
+                  {/* Text */}
+                  <div>
+                    <motion.p
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-primary font-semibold text-base"
+                    >
+                      {lang === "ar"
+                        ? "شكراً لك على ملاحظاتك"
+                        : "Thank you for your feedback"}
+                    </motion.p>
+
+                    <motion.p
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-muted-foreground text-sm mt-1"
+                    >
+                      {lang === "ar"
+                        ? "نحن نقدر وقتك ومشاركتك"
+                        : "We truly appreciate your response"}
+                    </motion.p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+          </motion.div>
+
+
+
+        </div>
+
+      )}
     </section>
   );
 };

@@ -9,7 +9,16 @@ export type CreateAppointmentRequestPayload = {
   additionalNotes?: string;
 };
 
-export const createAppointmentRequest = async (data: CreateAppointmentRequestPayload) => {
-  const response = await api.post("/api/v1/appointment-requests", data);
+export const createAppointmentRequest = async (
+  data: CreateAppointmentRequestPayload
+) => {
+
+  console.log("payload", data);
+
+  const response = await api.post(
+    "/api/v1/appointment-requests",
+    data
+  );
+
   return response.data;
 };
