@@ -93,12 +93,7 @@ export function mapApiDepartmentRow(
   if (!OID.test(mongoId)) return null;
 
   const name = String(row.name ?? "").trim();
-  if (!name || name === "Allergy & Immunology") return null;
-
-  // Nutricare is the API's internal name for the Clinical Nutrition & Dietetics department.
-  // Remap it so doctors and the department card appear under the public-facing name.
-  const isNutricare = /^nutricare$/i.test(name);
-  const displayName = isNutricare ? "Clinical Nutrition & Dietetics" : name;
+  if (!name || name === "Allergy & Immunology" || /^nutricare$/i.test(name)) return null;
 
   const departmentId =
     typeof row.departmentId === "string" ? row.departmentId.trim() : undefined;
@@ -120,24 +115,22 @@ export function mapApiDepartmentRow(
   const deptTaglineArabic = String(row.deptTaglineArabic ?? "").trim();
   const desc = deptTagline || String(row.description ?? "").trim();
   const descAr = deptTaglineArabic || String(row.arabicDescription ?? "").trim();
-  const nameAr = isNutricare
-    ? "التغذية الإكلينيكية والحمية الغذائية"
-    : String(row.arabicName ?? name).trim();
+  const nameAr = String(row.arabicName ?? name).trim();
   const medicalField = String(row.medicalField ?? "").trim();
   const medicalFieldAr = String(row.medicalFieldAr ?? "").trim();
   const img = String(row.image ?? "").trim();
 
   return {
     id: index + 1,
-    name: displayName,
+    name,
     nameAr,
     desc,
     descAr,
     medicalField: medicalField || undefined,
     medicalFieldAr: medicalFieldAr || undefined,
     img,
-    slug: departmentSlug(displayName, mongoId),
-    icon: inferDepartmentIcon(displayName),
+    slug: departmentSlug(name, mongoId),
+    icon: inferDepartmentIcon(name),
     category: apiCategoryName,
     clinicCode: departmentId,
     mainCategory,
