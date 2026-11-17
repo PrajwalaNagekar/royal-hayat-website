@@ -226,7 +226,8 @@ export const deptDoctorAliases: Record<string, string[]> = {
   "Reproductive Medicine & IVF": ["Reproductive Medicine & IVF", "IVF", "Reproductive Medicine"],
   "Pediatrics": ["Pediatric", "Pediatrics"],
   "Neonatal": ["Neonatal"],
-  "Internal Medicine": ["Internal Medicine", "Nutricare"],
+  "Internal Medicine": ["Internal Medicine"],
+  "Clinical Nutrition & Dietetics": ["Clinical Nutrition & Dietetics", "Nutricare"],
   "General & Laparoscopic Surgery": ["General Surgery"],
   "Plastic Surgery & Cosmetology": ["La Cosmetique", "Plastic Surgery"],
   "Dermatology": ["Dermatology"],
@@ -247,7 +248,7 @@ export const deptDoctorAliases: Record<string, string[]> = {
 };
 /** Arabic headings for /doctors groups that are separate from their parent department alias. */
 export const deptDoctorAliasNameAr: Record<string, string> = {
-  Nutricare: "التغذية السريرية",
+  Nutricare: "التغذية الإكلينيكية والحمية الغذائية",
   "La Cosmetique": "لا كوزمتيك",
 };
 export const ROYALE_HAYAT_PHARMACY_DOCTOR_IDS = [

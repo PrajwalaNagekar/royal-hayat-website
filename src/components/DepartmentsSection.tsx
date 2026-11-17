@@ -130,6 +130,7 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
             getDepartmentCardCacheKey(item) === cacheKey ? { ...item, subs: apiSubs } : item,
           ),
         );
+
       })
       .catch(() => {
         /* card stays empty until API succeeds */
@@ -144,39 +145,6 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
       cancelled = true;
     };
   }, [openIndex, departments, deptCardCache]);
-  
-  // Preload all subspeciality doctors when department card is opened
-  useEffect(() => {
-    if (openIndex === null) return;
-    const dept = departments[openIndex];
-    if (!dept) return;
-
-    const cardData = deptCardCache[getDepartmentCardCacheKey(dept)];
-    const cardSubs = cardData?.subs ?? dept.subs ?? [];
-    if (cardSubs.length === 0) return;
-
-    // Fetch doctors for each subspeciality
-    cardSubs.forEach((sub) => {
-      if (!sub.subspecialityId) return;
-      
-      const cacheKey = `${getDepartmentCardCacheKey(dept)}:${sub.subspecialityId}`;
-      if (subspecialityDoctorsCache[cacheKey]) return; // Already cached
-
-      void fetchMappedDoctorsBySubspeciality(
-        sub.subspecialityId,
-        dept.name,
-        dept.nameAr,
-        dept.mongoId,
-      )
-        .then((doctors) => {
-          setSubspecialityDoctorsCache((prev) => ({ ...prev, [cacheKey]: doctors }));
-        })
-        .catch(() => {
-          setSubspecialityDoctorsCache((prev) => ({ ...prev, [cacheKey]: [] }));
-        });
-    });
-  }, [openIndex, departments, deptCardCache, subspecialityDoctorsCache]);
-  
   useEffect(() => {
     if (openIndex === null || restoreScrollYRef.current == null) return;
     const scrollY = restoreScrollYRef.current;
@@ -203,6 +171,7 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
       window.clearTimeout(timer);
     };
   }, [openIndex, departments]);
+
   const openDoctorProfile = (docId: string, origIdx: number, dept: Department) => {
     navigate(`/doctors/${docId}`, {
       state: {
@@ -366,7 +335,10 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
         // Filter to show only doctors from this department
         const filteredDoctors = subspecialityDoctors.filter((doctor) => {
           if (Array.isArray(doctor.departmentIds) && selectedDept.mongoId) {
-            return doctor.departmentIds.includes(selectedDept.mongoId);
+            if (doctor.departmentIds.includes(selectedDept.mongoId)) return true;
+          }
+          if (doctor.departmentId && selectedDept.mongoId && doctor.departmentId === selectedDept.mongoId) {
+            return true;
           }
           const doctorDepartment = lang === "ar" ? doctor.departmentAr : doctor.department;
           return doctorDepartment === selectedDept.name || doctorDepartment === selectedDept.nameAr;
@@ -389,24 +361,13 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
       if (sub.subspecialityId) {
         const cacheKey = `${getDepartmentCardCacheKey(selectedDept)}:${sub.subspecialityId}`;
         const subspecialityDoctors = subspecialityDoctorsCache[cacheKey];
-        
         if (subspecialityDoctors) {
-          subspecialityDoctors.forEach((doctor) => {
-            // Only add if doctor belongs to this department
-            const belongsToDept = 
-              (Array.isArray(doctor.departmentIds) && selectedDept.mongoId && 
-               doctor.departmentIds.includes(selectedDept.mongoId)) ||
-              doctor.department === selectedDept.name ||
-              doctor.departmentAr === selectedDept.nameAr;
-            
-            if (belongsToDept && !doctorMap.has(doctor.id)) {
-              doctorMap.set(doctor.id, doctor);
-            }
+          subspecialityDoctors.forEach((doc) => {
+            doctorMap.set(doc.id, doc);
           });
         }
       }
     });
-
     const mergedDoctors = Array.from(doctorMap.values());
     return sortDoctorsInDepartment(mergedDoctors, selectedDept.name, "en");
   }, [
