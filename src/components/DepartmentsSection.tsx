@@ -144,6 +144,39 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
       cancelled = true;
     };
   }, [openIndex, departments, deptCardCache]);
+  
+  // Preload all subspeciality doctors when department card is opened
+  useEffect(() => {
+    if (openIndex === null) return;
+    const dept = departments[openIndex];
+    if (!dept) return;
+
+    const cardData = deptCardCache[getDepartmentCardCacheKey(dept)];
+    const cardSubs = cardData?.subs ?? dept.subs ?? [];
+    if (cardSubs.length === 0) return;
+
+    // Fetch doctors for each subspeciality
+    cardSubs.forEach((sub) => {
+      if (!sub.subspecialityId) return;
+      
+      const cacheKey = `${getDepartmentCardCacheKey(dept)}:${sub.subspecialityId}`;
+      if (subspecialityDoctorsCache[cacheKey]) return; // Already cached
+
+      void fetchMappedDoctorsBySubspeciality(
+        sub.subspecialityId,
+        dept.name,
+        dept.nameAr,
+        dept.mongoId,
+      )
+        .then((doctors) => {
+          setSubspecialityDoctorsCache((prev) => ({ ...prev, [cacheKey]: doctors }));
+        })
+        .catch(() => {
+          setSubspecialityDoctorsCache((prev) => ({ ...prev, [cacheKey]: [] }));
+        });
+    });
+  }, [openIndex, departments, deptCardCache, subspecialityDoctorsCache]);
+  
   useEffect(() => {
     if (openIndex === null || restoreScrollYRef.current == null) return;
     const scrollY = restoreScrollYRef.current;
@@ -322,17 +355,60 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
       : undefined;
     const allDeptDoctors = cardData?.doctors ?? [];
 
+    // If a specific subspeciality is selected, show only those doctors
     if (selectedSubSlug && cardSubs.length > 0) {
       const selectedSub = cardSubs.find((sub) => getSubSlug(sub.name) === selectedSubSlug);
       if (selectedSub?.subspecialityId) {
         const cacheKey = `${getDepartmentCardCacheKey(selectedDept)}:${selectedSub.subspecialityId}`;
         const subspecialityDoctors = subspecialityDoctorsCache[cacheKey];
         if (!subspecialityDoctors) return [];
-        return sortDoctorsInDepartment(subspecialityDoctors, selectedDept.name, "en");
+        
+        // Filter to show only doctors from this department
+        const filteredDoctors = subspecialityDoctors.filter((doctor) => {
+          if (Array.isArray(doctor.departmentIds) && selectedDept.mongoId) {
+            return doctor.departmentIds.includes(selectedDept.mongoId);
+          }
+          const doctorDepartment = lang === "ar" ? doctor.departmentAr : doctor.department;
+          return doctorDepartment === selectedDept.name || doctorDepartment === selectedDept.nameAr;
+        });
+        
+        return sortDoctorsInDepartment(filteredDoctors, selectedDept.name, "en");
       }
     }
 
-    return sortDoctorsInDepartment(allDeptDoctors, selectedDept.name, "en");
+    // When no subspeciality is selected, show ALL doctors including subspeciality doctors
+    const doctorMap = new Map<string, Doctor>();
+    
+    // Add direct department doctors
+    allDeptDoctors.forEach((doc) => {
+      doctorMap.set(doc.id, doc);
+    });
+
+    // Add subspeciality doctors that belong to this department
+    cardSubs.forEach((sub) => {
+      if (sub.subspecialityId) {
+        const cacheKey = `${getDepartmentCardCacheKey(selectedDept)}:${sub.subspecialityId}`;
+        const subspecialityDoctors = subspecialityDoctorsCache[cacheKey];
+        
+        if (subspecialityDoctors) {
+          subspecialityDoctors.forEach((doctor) => {
+            // Only add if doctor belongs to this department
+            const belongsToDept = 
+              (Array.isArray(doctor.departmentIds) && selectedDept.mongoId && 
+               doctor.departmentIds.includes(selectedDept.mongoId)) ||
+              doctor.department === selectedDept.name ||
+              doctor.departmentAr === selectedDept.nameAr;
+            
+            if (belongsToDept && !doctorMap.has(doctor.id)) {
+              doctorMap.set(doctor.id, doctor);
+            }
+          });
+        }
+      }
+    });
+
+    const mergedDoctors = Array.from(doctorMap.values());
+    return sortDoctorsInDepartment(mergedDoctors, selectedDept.name, "en");
   }, [
     selectedDept,
     selectedCardData,
@@ -340,6 +416,7 @@ const DepartmentsSection = ({ showPageTitle = false }: DepartmentsSectionProps) 
     openIndex,
     selectedSubByDept,
     subspecialityDoctorsCache,
+    lang,
   ]);
 
   const selectedSubspecialityLoading = useMemo(() => {
